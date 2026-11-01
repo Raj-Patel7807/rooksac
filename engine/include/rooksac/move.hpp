@@ -17,9 +17,11 @@ public:
             return std::nullopt;
         }
 
-        return Move(static_cast<std::uint16_t>(squareIndex(from)) |
-                    (static_cast<std::uint16_t>(squareIndex(to)) << kToShift) |
-                    (promotionCode(promotion) << kPromotionShift));
+        const auto encoded = static_cast<std::uint16_t>(
+            static_cast<std::uint16_t>(squareIndex(from)) |
+            (static_cast<std::uint16_t>(squareIndex(to)) << kToShift) |
+            (promotionCode(promotion) << kPromotionShift));
+        return Move(encoded);
     }
 
     [[nodiscard]] constexpr Square from() const noexcept {
