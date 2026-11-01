@@ -1,6 +1,6 @@
 # Build and quality checks
 
-RookSac uses CMake 3.23 or newer, C++20, and the Ninja generator. The current build contains one native target, `rooksac_build_smoke_test`, which verifies that the selected compiler accepts C++20 and that CTest is wired correctly. It is build infrastructure, not a chess-engine implementation.
+RookSac uses CMake 3.23 or newer, C++20, and the Ninja generator. The build contains a header-only `rooksac_core` target plus `rooksac_build_smoke_test` and `rooksac_core_types_test` executables. The tests verify C++20 compilation, CTest wiring, and core primitive contracts; they are not a playable chess engine.
 
 ## Prerequisites
 
@@ -41,4 +41,4 @@ ctest --preset clang-asan-ubsan
 
 ## Current target boundary
 
-No `rooksac_core`, `rooksac_engine`, perft, or benchmark target exists yet because their corresponding engine code does not exist. Future targets must use explicit target dependencies and keep test-only dependencies out of production binaries.
+`rooksac_core` is currently a header-only target for foundational types and bitboard primitives. No `rooksac_engine`, perft, or benchmark target exists because their corresponding engine code does not exist. Future targets must use explicit target dependencies and keep test-only dependencies out of production binaries.

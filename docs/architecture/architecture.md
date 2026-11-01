@@ -1,6 +1,6 @@
 # Architecture
 
-All components below are **planned**. Phase 0 contains no executable engine.
+The core type and bitboard primitive layer is implemented. Position state, move generation, search, evaluation, hashing, timing, UCI, and application components below remain planned.
 
 ```mermaid
 flowchart TD
