@@ -4,9 +4,18 @@
 
 Pseudo-legal moves obey how pieces move but may leave the moving side’s king in check. Legal moves additionally satisfy the king-safety rule. Correct move generation is foundational: search, evaluation comparisons, checkmate detection, and UCI output all depend on it.
 
-## Planned RookSac design
+## Implemented attack and pseudo-legal move generation
 
-Future generation will cover pawn pushes and captures, knight, bishop, rook, queen, and king moves; captures, promotions, en passant, castling, check detection, and no-legal-move outcomes. The initial approach may generate pseudo-legal moves then filter after a reversible state transition; alternative direct legal generation can be evaluated later.
+RookSac implements:
+- Precomputed `constexpr` lookup tables for pawn attacks, knight attacks, and king attacks.
+- Robust 4-direction ray stepping for bishop and rook attacks, with queen attacks defined as their union.
+- Attack predicates: `attacks::attacksByColor` for global attack bitboards and `attacks::isSquareAttacked` for targeted check/threat queries.
+- Bounded `MoveList` stack container (`std::array<Move, 256>`) avoiding heap allocations.
+- Pseudo-legal move generators in `rooksac::movegen`: `generatePseudoLegalMoves`, `generatePseudoLegalCaptures`, and `generatePseudoLegalQuiets`. These generate all piece movements, double pawn pushes, promotions, en-passant captures, and castling (path emptiness verified) without filtering for king safety.
+
+## Planned legal move filtering and certification
+
+King safety filtering, check evasion, pinned piece constraints, castling through check verification, en-passant discovered check validation, checkmate/stalemate detection, and perft certification will be implemented in Sprint 07.
 
 ## Alternatives and trade-offs
 

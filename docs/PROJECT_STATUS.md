@@ -11,6 +11,7 @@ This page is the authoritative status summary. It describes repository facts, no
 - CI quality gates: Linux GCC 12 and Clang 15 builds, Windows MSVC build, CTest, formatting, clang-tidy, and Clang ASan/UBSan jobs.
 - Core chess primitives: strongly typed colors, pieces, files, ranks, squares, bitboards, masks, and compact move encoding with exhaustive primitive tests.
 - Position state and FEN parser: transactional FEN serialization and deserialization with structured errors, piece and occupancy bitboards with mailbox consistency, and reversible make/unmake move execution with `UndoState`.
+- Attack and pseudo-legal move generation: compile-time leaper attack lookup tables, ray-stepping slider attacks, square attack predicates, bounded `MoveList`, and pseudo-legal move generation covering all pieces, captures, promotions, en-passant, and castling paths.
 
 ## In progress
 
@@ -18,8 +19,7 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Planned
 
-- Attack generation and pseudo-legal move generation under `engine/` (Sprint 06).
-- Legal move generation, check/checkmate detection, and perft certification (Sprint 07).
+- Legal move generation, check/checkmate detection, and perft certification under `engine/` (Sprint 07).
 - Search, evaluation, transposition tables, and time management.
 - A standalone C++20 chess engine executable and UCI protocol support under `engine/`.
 - Perft and benchmark tools, offline research tooling, and repository tools.
@@ -33,4 +33,4 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Current limitations
 
-There is no legal move generator, search, evaluation, perft tool, benchmark tool, UCI protocol implementation, or engine executable. `rooksac_core` provides core types, bitboard operations, position state, FEN parsing, and make/unmake move transitions.
+There is no legal move generator (king-in-check filtering is planned for Sprint 07), search, evaluation, perft tool, benchmark tool, UCI protocol implementation, or engine executable. `rooksac_core` provides core types, bitboard operations, position state, FEN parsing, make/unmake move transitions, piece attacks, and pseudo-legal move generation.

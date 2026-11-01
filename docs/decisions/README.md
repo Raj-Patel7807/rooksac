@@ -8,6 +8,7 @@ This file is the initial ADR register. Status distinguishes an adopted working d
 - [ADR-008 — Legal provenance and licence decision gate](adr-008-legal-provenance-and-license-gate.md)
 - [ADR-009 — Core primitives and square mapping](adr-009-core-primitives-and-square-mapping.md)
 - [ADR-010 — Position state representation, FEN parser, and reversible make/unmake](adr-010-position-representation-and-reversible-state.md)
+- [ADR-011 — Piece attack generation, MoveList container, and pseudo-legal move generation](adr-011-attack-generation-and-pseudo-legal-moves.md)
 
 ## ADR-001 — C++20 for the engine
 
