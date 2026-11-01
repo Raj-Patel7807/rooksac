@@ -58,9 +58,13 @@ rooksac_configure_warnings(rooksac_build_smoke_test)
 rooksac_configure_sanitizers(rooksac_build_smoke_test)
 rooksac_configure_clang_tidy(rooksac_build_smoke_test)
 
-add_library(rooksac_core INTERFACE)
-target_compile_features(rooksac_core INTERFACE cxx_std_20)
-target_include_directories(rooksac_core INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/engine/include>)
+add_library(rooksac_core
+    engine/src/position.cpp)
+target_compile_features(rooksac_core PUBLIC cxx_std_20)
+target_include_directories(rooksac_core PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/engine/include>)
+rooksac_configure_warnings(rooksac_core)
+rooksac_configure_sanitizers(rooksac_core)
+rooksac_configure_clang_tidy(rooksac_core)
 
 add_executable(rooksac_core_types_test engine/tests/core-types-test.cpp)
 target_link_libraries(rooksac_core_types_test PRIVATE rooksac_core)
@@ -68,9 +72,16 @@ rooksac_configure_warnings(rooksac_core_types_test)
 rooksac_configure_sanitizers(rooksac_core_types_test)
 rooksac_configure_clang_tidy(rooksac_core_types_test)
 
+add_executable(rooksac_position_test engine/tests/position-test.cpp)
+target_link_libraries(rooksac_position_test PRIVATE rooksac_core)
+rooksac_configure_warnings(rooksac_position_test)
+rooksac_configure_sanitizers(rooksac_position_test)
+rooksac_configure_clang_tidy(rooksac_position_test)
+
 if(BUILD_TESTING)
     add_test(NAME rooksac.build-smoke COMMAND rooksac_build_smoke_test)
     add_test(NAME rooksac.core-types COMMAND rooksac_core_types_test)
+    add_test(NAME rooksac.position COMMAND rooksac_position_test)
 endif()
 
 add_custom_target(
