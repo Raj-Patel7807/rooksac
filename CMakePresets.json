@@ -1,0 +1,138 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 23,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "cacheVariables": {
+                "BUILD_TESTING": "ON",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "ROOKSAC_WARNINGS_AS_ERRORS": "ON"
+            }
+        },
+        {
+            "name": "debug",
+            "inherits": "base",
+            "displayName": "Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name": "release",
+            "inherits": "base",
+            "displayName": "Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "relwithdebinfo",
+            "inherits": "base",
+            "displayName": "RelWithDebInfo",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+            }
+        },
+        {
+            "name": "clang-tidy",
+            "inherits": "debug",
+            "displayName": "Clang-Tidy Debug",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "clang++-15",
+                "ROOKSAC_ENABLE_CLANG_TIDY": "ON"
+            }
+        },
+        {
+            "name": "clang-asan-ubsan",
+            "inherits": "debug",
+            "displayName": "Clang ASan and UBSan Debug",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "clang++-15",
+                "ROOKSAC_ENABLE_SANITIZERS": "ON"
+            }
+        },
+        {
+            "name": "windows-debug",
+            "inherits": "debug",
+            "displayName": "Windows Debug"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "debug",
+            "configurePreset": "debug"
+        },
+        {
+            "name": "release",
+            "configurePreset": "release"
+        },
+        {
+            "name": "relwithdebinfo",
+            "configurePreset": "relwithdebinfo"
+        },
+        {
+            "name": "clang-tidy",
+            "configurePreset": "clang-tidy"
+        },
+        {
+            "name": "clang-asan-ubsan",
+            "configurePreset": "clang-asan-ubsan"
+        },
+        {
+            "name": "windows-debug",
+            "configurePreset": "windows-debug"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "debug",
+            "configurePreset": "debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "release",
+            "configurePreset": "release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "relwithdebinfo",
+            "configurePreset": "relwithdebinfo",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "clang-tidy",
+            "configurePreset": "clang-tidy",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "clang-asan-ubsan",
+            "configurePreset": "clang-asan-ubsan",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "windows-debug",
+            "configurePreset": "windows-debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        }
+    ]
+}
