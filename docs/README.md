@@ -61,5 +61,7 @@ This index separates current facts from planned design. The repository has no im
 | [Frontend](frontend/README.md) | Future client boundary | Planning the application frontend. |
 | [Operations](operations/README.md) | Future delivery and runtime boundary | Planning CI, deployment, or operations. |
 | [Legal](legal/README.md) | Legal-decision boundary | Considering licensing or provenance work. |
+| [Licensing and notices](legal/LICENSING_AND_NOTICES.md) | Legal inventory, licence decision gate, and asset-review process | Reviewing licence or provenance status. |
+| [Third-party notices](legal/THIRD_PARTY_NOTICES.md) | Current dependency and asset attribution inventory | Adding or releasing a third-party component. |
 
 Repository-level [contribution guidance](../CONTRIBUTING.md), [security policy](../SECURITY.md), and [agent instructions](../AGENTS.md) also apply.

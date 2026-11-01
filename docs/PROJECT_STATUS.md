@@ -10,7 +10,7 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## In progress
 
-Nothing. Sprint 01 establishes the repository baseline only.
+- Legal and provenance baseline: the repository inventory and future review process are documented, but licence selection and copyright ownership require owner confirmation.
 
 ## Planned
 
@@ -21,7 +21,7 @@ Nothing. Sprint 01 establishes the repository baseline only.
 
 ## Deferred
 
-- License selection, copyright ownership, and third-party provenance are intentionally deferred to Sprint 02.
+- Publishing a license, copyright notices, SPDX source headers, and any `NOTICE` file are deferred until the owner confirms the copyright holder, year policy, and license choice.
 - Any networked application, database, queue, frontend, deployment, neural evaluation, or Python runtime integration is deferred to later roadmap work.
 
 ## Current limitations

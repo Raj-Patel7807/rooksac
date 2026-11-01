@@ -5,6 +5,7 @@ This file is the initial ADR register. Status distinguishes an adopted working d
 ## Decision index
 
 - [ADR-007 — Modular monorepo repository layout](adr-007-repository-layout.md)
+- [ADR-008 — Legal provenance and licence decision gate](adr-008-legal-provenance-and-license-gate.md)
 
 ## ADR-001 — C++20 for the engine
 

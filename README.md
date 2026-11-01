@@ -88,4 +88,4 @@ Contributions should stay within an agreed phase, include proportionate validati
 
 ## License
 
-No license has been selected. Reuse, distribution, and contribution terms remain open until a license decision is documented.
+No license has been selected. Reuse, distribution, and contribution terms remain open until the owner confirms a licensing decision. The current inventory and owner decision checklist are in [licensing and notices](docs/legal/LICENSING_AND_NOTICES.md).

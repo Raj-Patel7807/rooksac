@@ -2,7 +2,7 @@
 
 ## Naming
 
-- Documentation and executable scripts use lowercase kebab-case names. Conventional repository index files remain `README.md`; `docs/PROJECT_STATUS.md` retains the sprint-specified name.
+- Documentation and executable scripts use lowercase kebab-case names. Conventional repository index files remain `README.md`; `docs/PROJECT_STATUS.md`, `docs/legal/LICENSING_AND_NOTICES.md`, and `docs/legal/THIRD_PARTY_NOTICES.md` retain sprint-specified names.
 - C++ source files use lowercase kebab-case when introduced; public headers belong under `engine/include/rooksac/` and implementation files under `engine/src/`.
 - C++ follows the conventions in [code rules](code-rules.md): `PascalCase` types, `camelCase` functions and variables, `kPascalCase` constants, and namespace `rooksac`.
 
