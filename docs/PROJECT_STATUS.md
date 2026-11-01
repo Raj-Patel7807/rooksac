@@ -7,6 +7,8 @@ This page is the authoritative status summary. It describes repository facts, no
 - Repository governance: agent guidance, contribution guidance, security reporting policy, support guidance, formatting/editor settings, ignore rules, and text attributes.
 - Documentation structure: indexed product, architecture, engine, testing, engineering, reference, decision, ML, application, operations, and legal sections.
 - Repository-layout decision record and lowercase kebab-case documentation naming, except conventional `README.md` indexes.
+- Native build foundation: CMake 3.23+, C++20 smoke-test target, CTest registration, Debug/Release/RelWithDebInfo presets, compiler warnings, clang-format and optional clang-tidy/sanitizer targets.
+- CI quality gates: Linux GCC 12 and Clang 15 builds, Windows MSVC build, CTest, formatting, clang-tidy, and Clang ASan/UBSan jobs.
 
 ## In progress
 
@@ -14,8 +16,8 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Planned
 
-- A standalone C++20/CMake engine under `engine/`.
-- Engine tests, benchmarks, offline research tooling, and repository tools.
+- A standalone C++20 chess engine under `engine/`.
+- Chess-engine tests, perft and benchmark tools, offline research tooling, and repository tools.
 - A separate application layer under `app/` that communicates with the engine through UCI/process boundaries.
 - CI, packaging, deployment, and release processes.
 
@@ -26,4 +28,4 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Current limitations
 
-There are no source files, build targets, test suites, scripts, workflows, benchmarks, UCI commands, or playable binary. The planned layout is intentionally documented without creating empty implementation directories.
+The only native source is a build-system smoke test. There is no chess implementation, engine library, engine executable, perft tool, benchmark tool, UCI command, or playable binary.

@@ -1,6 +1,6 @@
 # RookSac documentation
 
-This index separates current facts from planned design. The repository has no implementation, build configuration, or tests; when they exist, those artifacts will define current behavior. Documentation below is authoritative for project intent, governance, and documented decisions.
+This index separates current facts from planned design. The repository has CMake build infrastructure and a C++20 smoke test, but no chess implementation; implemented artifacts define current behavior. Documentation below is authoritative for project intent, governance, and documented decisions.
 
 ## Product direction
 

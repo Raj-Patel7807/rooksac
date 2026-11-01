@@ -6,7 +6,7 @@ RookSac is a planned C++20 chess engine and a long-term computer-chess engineeri
 
 ## Status
 
-**Repository foundation complete; engine implementation has not started.** RookSac does not yet contain an engine, a build system, tests, UCI support, benchmarks, or a playable binary. The documents in this repository describe intended design and planned milestones; they are not evidence of implemented functionality. See [project status](docs/PROJECT_STATUS.md) for the authoritative status summary.
+**Build foundation complete; chess-engine implementation has not started.** RookSac has a CMake C++20 smoke-test target and CI quality gates, but no chess engine, UCI support, perft tool, benchmark tool, or playable binary. The documents in this repository describe intended design and planned milestones; they are not evidence of implemented functionality. See [project status](docs/PROJECT_STATUS.md) for the authoritative status summary.
 
 ## Vision
 
@@ -51,10 +51,10 @@ See [architecture](docs/architecture/architecture.md) for the intended component
 ```text
 rooksac/
 ├── docs/                    # Authoritative project documentation
-├── engine/                  # Future self-contained native engine
+├── engine/                  # Native engine boundary; currently only build smoke test
 │   ├── include/rooksac/     # Future public C++ headers
 │   ├── src/                 # Future C++ implementation
-│   └── tests/               # Future engine tests
+│   └── tests/               # Current build smoke test; future engine tests
 ├── research/                # Future offline Python experiments
 ├── app/                     # Future process-boundary web product
 │   ├── backend/
@@ -68,7 +68,7 @@ rooksac/
 └── SECURITY.md
 ```
 
-Implementation directories are intentionally not created yet: empty directories are not tracked by Git, and this sprint introduces no chess or application behavior. The proposed boundaries are defined in [ADR-007](docs/decisions/adr-007-repository-layout.md).
+The `engine/tests/` directory contains only the build-system smoke test; chess and application behavior have not been introduced. The proposed boundaries are defined in [ADR-007](docs/decisions/adr-007-repository-layout.md).
 
 ## Roadmap
 
@@ -80,7 +80,7 @@ The [documentation index](docs/README.md) is the entry point for product directi
 
 ## Build and usage
 
-Build and usage instructions are not available because no buildable engine exists yet. The intended approach is documented in [build guidance](docs/engineering/build.md); commands will be added only alongside a real CMake configuration.
+The repository builds a C++20 smoke-test target, not a chess engine. See [build guidance](docs/engineering/build.md) for the supported toolchains, presets, quality targets, and exact commands.
 
 ## Contributing
 

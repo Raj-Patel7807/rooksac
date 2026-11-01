@@ -18,4 +18,4 @@ Tests establish confidence in actual behavior; documentation and a passing compi
 
 Future C++ builds should support warnings and sanitizers where platform/toolchain availability permits. Prioritize memory safety, undefined behavior, state restoration, pinned pieces, checks, castling, en passant, promotions, terminal positions, malformed input, and time interruption.
 
-No test framework or test suite exists. See [Perft](perft.md) and [build policy](../engineering/build.md).
+The current CTest suite contains one build-system smoke test. It verifies C++20 compilation and CTest integration only; it does not validate chess behavior. No unit-test framework, position test, perft test, or search test exists yet. See [Perft](perft.md) and [build guidance](../engineering/build.md).
