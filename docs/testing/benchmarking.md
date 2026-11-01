@@ -14,4 +14,4 @@ RookSac will measure performance only with reproducible conditions. A number wit
 
 Use release-oriented builds only after a real build exists, warm up when appropriate, repeat runs, record variance or raw runs, and distinguish throughput from playing strength. Pin or disclose relevant OS, CPU, compiler, CMake generator, flags, and clock source. Avoid comparing results across different machines as if they were direct optimization evidence.
 
-No benchmark harness or results exist in Phase 0. See [Performance](PERFORMANCE.md).
+No benchmark harness or results exist. See [performance](performance.md).

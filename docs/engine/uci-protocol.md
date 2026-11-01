@@ -18,4 +18,4 @@ Malformed input, unknown options, repeated commands, a stop during search, FEN p
 
 ## Future improvements and references
 
-Options, diagnostics, and non-standard commands need documented scope before adoption. See [official UCI specification](https://www.shredderchess.com/chess-info/features/uci-universal-chess-interface.html) and [data flow](../architecture/DATA_FLOW.md).
+Options, diagnostics, and non-standard commands need documented scope before adoption. See [official UCI specification](https://www.shredderchess.com/chess-info/features/uci-universal-chess-interface.html) and [data flow](../architecture/data-flow.md).

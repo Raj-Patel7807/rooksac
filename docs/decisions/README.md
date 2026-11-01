@@ -2,6 +2,10 @@
 
 This file is the initial ADR register. Status distinguishes an adopted working direction from a choice still subject to evidence. New material changes should add an entry rather than silently revising history.
 
+## Decision index
+
+- [ADR-007 — Modular monorepo repository layout](adr-007-repository-layout.md)
+
 ## ADR-001 — C++20 for the engine
 
 - **Status:** Accepted

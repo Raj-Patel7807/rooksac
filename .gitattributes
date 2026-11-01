@@ -1,0 +1,9 @@
+# Keep repository text portable and diffable.
+* text=auto eol=lf
+
+# Treat common binary and generated asset formats as binary when they are introduced.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary

@@ -20,4 +20,4 @@
 - Keep generated datasets, large artifacts, credentials, and environment-specific paths out of version control.
 - Treat Python results as experiments: record data source, parameters, environment, and limitations.
 
-See [performance principles](../testing/PERFORMANCE.md) and [build guidance](BUILD.md).
+See [performance principles](../testing/performance.md), [build guidance](build.md), and [naming and layout](naming-and-layout.md).

@@ -18,4 +18,4 @@ Immediate stop, tiny time budgets, no legal moves, interrupted iterative deepeni
 
 ## Future improvements and references
 
-Allocation may incorporate position volatility only after evidence. See [UCI protocol](UCI_PROTOCOL.md) and [Time Management](https://www.chessprogramming.org/Time_Management).
+Allocation may incorporate position volatility only after evidence. See [UCI protocol](uci-protocol.md) and [Time Management](https://www.chessprogramming.org/Time_Management).

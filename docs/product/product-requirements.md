@@ -22,7 +22,7 @@ No GUI, online service, opening-book promise, rating target, or neural dependenc
 
 ## Functional requirements
 
-The engine is intended to parse positions, generate legal moves, search with time awareness, evaluate positions, and eventually accept UCI commands. The uniquely identified source of requirement status is [REQUIREMENTS.md](REQUIREMENTS.md).
+The engine is intended to parse positions, generate legal moves, search with time awareness, evaluate positions, and eventually accept UCI commands. The uniquely identified source of requirement status is [requirements.md](requirements.md).
 
 ## Non-functional requirements
 
@@ -34,4 +34,4 @@ The runtime engine remains native C++ and should avoid unnecessary allocation on
 
 ## Success criteria
 
-Milestone acceptance criteria in the [roadmap](ROADMAP.md), passing relevant tests, and documented benchmark methodology determine progress. Documentation alone never proves functionality.
+Milestone acceptance criteria in the [roadmap](roadmap.md), passing relevant tests, and documented benchmark methodology determine progress. Documentation alone never proves functionality.

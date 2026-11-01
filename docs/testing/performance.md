@@ -12,4 +12,4 @@ Performance matters because chess search expands rapidly, but optimization is a 
 
 ## Method
 
-Profile representative workloads before changing code, identify the bottleneck, make an isolated change, preserve correctness tests, and compare under the [benchmarking](BENCHMARKING.md) protocol. Do not promise NPS, depth, memory, or playing-strength targets without evidence.
+Profile representative workloads before changing code, identify the bottleneck, make an isolated change, preserve correctness tests, and compare under the [benchmarking](benchmarking.md) protocol. Do not promise NPS, depth, memory, or playing-strength targets without evidence.

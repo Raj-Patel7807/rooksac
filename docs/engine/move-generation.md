@@ -14,8 +14,8 @@ Pseudo-legal generation plus filtering is straightforward to validate but can do
 
 ## Edge cases and testing
 
-Pinned pieces, double check, discovered attacks, castling through attack, en-passant discovered checks, promotion choices, checkmate, and stalemate require dedicated tests. Perft and divide output are the principal future validation tools; see [PERFT.md](../testing/PERFT.md).
+Pinned pieces, double check, discovered attacks, castling through attack, en-passant discovered checks, promotion choices, checkmate, and stalemate require dedicated tests. Perft and divide output are the principal future validation tools; see [perft](../testing/perft.md).
 
 ## Future improvements and references
 
-Optimize only after verified correctness and profiling. See [Board representation](BOARD_REPRESENTATION.md) and [Move Generation](https://www.chessprogramming.org/Move_Generation).
+Optimize only after verified correctness and profiling. See [board representation](board-representation.md) and [Move Generation](https://www.chessprogramming.org/Move_Generation).

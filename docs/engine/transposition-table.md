@@ -18,4 +18,4 @@ Hash collisions are possible and must not become silent correctness assumptions.
 
 ## Future improvements and references
 
-Table sizing, generations, and parallel-search concerns are deferred. See [Search](SEARCH.md) and [Transposition Table](https://www.chessprogramming.org/Transposition_Table).
+Table sizing, generations, and parallel-search concerns are deferred. See [search](search.md) and [Transposition Table](https://www.chessprogramming.org/Transposition_Table).

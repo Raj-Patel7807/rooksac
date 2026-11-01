@@ -10,7 +10,7 @@
 
 - Work only within the requested scope; do not implement unrelated features.
 - Follow the documented architecture and do not silently change it.
-- Record significant architectural changes in [DECISIONS.md](docs/architecture/DECISIONS.md).
+- Record significant architectural changes in the [decision register](docs/decisions/README.md).
 - Do not invent functionality or state that a planned feature exists.
 - Keep C++ search and real-time move selection independent of Python.
 

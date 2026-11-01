@@ -18,4 +18,4 @@ State must distinguish side to move, lost castling rights, legal en-passant stat
 
 ## Future work and references
 
-Implementation details, incremental updates, and table layout remain open. See [Move generation](MOVE_GENERATION.md), [Glossary](../reference/GLOSSARY.md), and [Chess Programming Wiki](https://www.chessprogramming.org/Bitboards).
+Implementation details, incremental updates, and table layout remain open. See [move generation](move-generation.md), [glossary](../reference/glossary.md), and [Chess Programming Wiki](https://www.chessprogramming.org/Bitboards).

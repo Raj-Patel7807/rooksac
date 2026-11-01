@@ -21,4 +21,4 @@ Search will receive a position, generate legal moves, make/unmake them, evaluate
 
 ## Edge cases, testing, and future work
 
-Terminal positions, repetition and draw policies, mate-score normalization, interrupted search, bound correctness, and state restoration require tests. Compare against known positions and use deterministic node-limited tests where possible. See [TT](TRANSPOSITION_TABLE.md), [time management](TIME_MANAGEMENT.md), and [Alpha-Beta](https://www.chessprogramming.org/Alpha-Beta).
+Terminal positions, repetition and draw policies, mate-score normalization, interrupted search, bound correctness, and state restoration require tests. Compare against known positions and use deterministic node-limited tests where possible. See [TT](transposition-table.md), [time management](time-management.md), and [Alpha-Beta](https://www.chessprogramming.org/Alpha-Beta).

@@ -18,4 +18,4 @@ Draw conditions, perspective consistency, king exposure, blocked passed pawns, a
 
 ## Future improvements and references
 
-Parameter tuning and NNUE research remain future options. See [Search](SEARCH.md) and [Evaluation](https://www.chessprogramming.org/Evaluation).
+Parameter tuning and NNUE research remain future options. See [search](search.md) and [Evaluation](https://www.chessprogramming.org/Evaluation).

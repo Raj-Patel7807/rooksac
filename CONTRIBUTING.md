@@ -1,10 +1,10 @@
 # Contributing to RookSac
 
-Thank you for contributing. RookSac is documentation-only in Phase 0; proposed implementation work should align with the [roadmap](docs/product/ROADMAP.md) and requirements register.
+Thank you for contributing. RookSac has a repository and documentation foundation, but no engine implementation; proposed implementation work should align with the [roadmap](docs/product/roadmap.md) and requirements register.
 
 ## Before changing code
 
-Read the [architecture](docs/architecture/ARCHITECTURE.md), applicable engine guide, [code rules](docs/engineering/CODE_RULES.md), and [agent instructions](AGENTS.md). Check existing code and open decisions rather than assuming design documents describe an implementation.
+Read the [architecture](docs/architecture/architecture.md), applicable engine guide, [code rules](docs/engineering/code-rules.md), [naming and layout](docs/engineering/naming-and-layout.md), and [agent instructions](AGENTS.md). Check existing code and open decisions rather than assuming design documents describe an implementation.
 
 ## Branches and commits
 

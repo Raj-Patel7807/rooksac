@@ -18,7 +18,7 @@ The Position API should expose state needed to generate attacks, make and unmake
 
 ## Data path
 
-A position arrives as the initial position plus moves or as FEN. Parsing validates format and constructs Position. Search repeatedly requests legal candidates, orders them, makes a move, evaluates leaves or recurses, then restores state. Search returns a selected move and associated information to UCI. [DATA_FLOW.md](DATA_FLOW.md) expands failure boundaries.
+A position arrives as the initial position plus moves or as FEN. Parsing validates format and constructs Position. Search repeatedly requests legal candidates, orders them, makes a move, evaluates leaves or recurses, then restores state. Search returns a selected move and associated information to UCI. [Data flow](data-flow.md) expands failure boundaries.
 
 ## Performance-critical areas
 

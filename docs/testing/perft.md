@@ -12,4 +12,4 @@ Use established reference positions and retain cases that exposed defects. Recor
 
 ## Reference positions
 
-Published suites, including the Chess Programming Wiki perft collection, provide known positions covering special rules. They are input references, not results for this repository. See [Perft Results](https://www.chessprogramming.org/Perft_Results) and [Move generation](../engine/MOVE_GENERATION.md).
+Published suites, including the Chess Programming Wiki perft collection, provide known positions covering special rules. They are input references, not results for this repository. See [Perft Results](https://www.chessprogramming.org/Perft_Results) and [move generation](../engine/move-generation.md).

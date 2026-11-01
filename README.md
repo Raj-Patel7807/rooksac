@@ -6,7 +6,7 @@ RookSac is a planned C++20 chess engine and a long-term computer-chess engineeri
 
 ## Status
 
-**Phase 0 — repository foundation and documentation.** RookSac does not yet contain an engine, a build system, tests, UCI support, benchmarks, or a playable binary. The documents in this repository describe intended design and planned milestones; they are not evidence of implemented functionality.
+**Repository foundation complete; engine implementation has not started.** RookSac does not yet contain an engine, a build system, tests, UCI support, benchmarks, or a playable binary. The documents in this repository describe intended design and planned milestones; they are not evidence of implemented functionality. See [project status](docs/project-status.md) for the authoritative status summary.
 
 ## Vision
 
@@ -44,38 +44,43 @@ flowchart LR
   Python[Python experimentation tools] -. offline data and analysis .-> Evaluation
 ```
 
-See [Architecture](docs/architecture/ARCHITECTURE.md) for the intended component boundaries.
+See [architecture](docs/architecture/architecture.md) for the intended component boundaries.
 
 ## Intended repository layout
 
 ```text
 rooksac/
-├── .github/workflows/       # Future automation, introduced when useful
-├── docs/                    # Product, architecture, engine, testing, and standards
-├── include/rooksac/         # Future public C++ headers
-├── src/                     # Future C++ implementation
-├── tests/                   # Future automated tests
+├── docs/                    # Authoritative project documentation
+├── engine/                  # Future self-contained native engine
+│   ├── include/rooksac/     # Future public C++ headers
+│   ├── src/                 # Future C++ implementation
+│   └── tests/               # Future engine tests
+├── research/                # Future offline Python experiments
+├── app/                     # Future process-boundary web product
+│   ├── backend/
+│   └── frontend/
 ├── benchmarks/              # Future reproducible benchmarks
-├── tools/python/            # Future Python experimentation tools
+├── tools/                   # Future repository tooling
+├── deploy/                  # Future deployment assets
 ├── README.md
 ├── AGENTS.md
 ├── CONTRIBUTING.md
 └── SECURITY.md
 ```
 
-Source, test, and tooling directories are intentionally not created yet: empty directories are not tracked by Git, and Phase 0 introduces no implementation.
+Implementation directories are intentionally not created yet: empty directories are not tracked by Git, and this sprint introduces no chess or application behavior. The proposed boundaries are defined in [ADR-007](docs/decisions/adr-007-repository-layout.md).
 
 ## Roadmap
 
-The work proceeds from position correctness to engine strength: foundation; position management; legal moves; basic search; alpha-beta; iterative deepening and hashing; evaluation; UCI; performance; advanced search; Python research; and a validated v1.0. Details and acceptance criteria are in the [roadmap](docs/product/ROADMAP.md).
+The work proceeds from position correctness to engine strength: foundation; position management; legal moves; basic search; alpha-beta; iterative deepening and hashing; evaluation; UCI; performance; advanced search; Python research; and a validated v1.0. Details and acceptance criteria are in the [roadmap](docs/product/roadmap.md).
 
 ## Documentation
 
-The [documentation index](docs/README.md) is the entry point for product direction, architecture, engine design, testing, and governance. New contributors should begin with the [vision](docs/product/VISION.md), [requirements](docs/product/REQUIREMENTS.md), and [agent guidance](AGENTS.md).
+The [documentation index](docs/README.md) is the entry point for product direction, architecture, engine design, testing, operations, and governance. New contributors should begin with the [vision](docs/product/vision.md), [requirements](docs/product/requirements.md), [contribution guide](CONTRIBUTING.md), and [agent guidance](AGENTS.md).
 
 ## Build and usage
 
-Build and usage instructions are not available because no buildable engine exists yet. The intended approach is documented in [Build guidance](docs/engineering/BUILD.md); commands will be added only alongside a real CMake configuration.
+Build and usage instructions are not available because no buildable engine exists yet. The intended approach is documented in [build guidance](docs/engineering/build.md); commands will be added only alongside a real CMake configuration.
 
 ## Contributing
 
