@@ -6,7 +6,7 @@ RookSac is a planned C++20 chess engine and a long-term computer-chess engineeri
 
 ## Status
 
-**Repository foundation complete; engine implementation has not started.** RookSac does not yet contain an engine, a build system, tests, UCI support, benchmarks, or a playable binary. The documents in this repository describe intended design and planned milestones; they are not evidence of implemented functionality. See [project status](docs/project-status.md) for the authoritative status summary.
+**Repository foundation complete; engine implementation has not started.** RookSac does not yet contain an engine, a build system, tests, UCI support, benchmarks, or a playable binary. The documents in this repository describe intended design and planned milestones; they are not evidence of implemented functionality. See [project status](docs/PROJECT_STATUS.md) for the authoritative status summary.
 
 ## Vision
 

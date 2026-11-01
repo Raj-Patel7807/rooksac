@@ -10,7 +10,7 @@ This index separates current facts from planned design. The repository has no im
 | [Product requirements](product/product-requirements.md) | Product requirements and success criteria | You need the intended product scope. |
 | [Requirements](product/requirements.md) | Identified, status-tracked requirements | You are planning or reviewing a feature. |
 | [Roadmap](product/roadmap.md) | Phased delivery plan and acceptance criteria | You need sequencing and phase boundaries. |
-| [Project status](project-status.md) | Implemented, in-progress, planned, and deferred work | You need a factual delivery snapshot. |
+| [Project status](PROJECT_STATUS.md) | Implemented, in-progress, planned, and deferred work | You need a factual delivery snapshot. |
 
 ## Architecture
 
