@@ -7,6 +7,7 @@ This file is the initial ADR register. Status distinguishes an adopted working d
 - [ADR-007 — Modular monorepo repository layout](adr-007-repository-layout.md)
 - [ADR-008 — Legal provenance and licence decision gate](adr-008-legal-provenance-and-license-gate.md)
 - [ADR-009 — Core primitives and square mapping](adr-009-core-primitives-and-square-mapping.md)
+- [ADR-010 — Position state representation, FEN parser, and reversible make/unmake](adr-010-position-representation-and-reversible-state.md)
 
 ## ADR-001 — C++20 for the engine
 

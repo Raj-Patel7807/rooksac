@@ -41,4 +41,4 @@ ctest --preset clang-asan-ubsan
 
 ## Current target boundary
 
-`rooksac_core` is currently a header-only target for foundational types and bitboard primitives. No `rooksac_engine`, perft, or benchmark target exists because their corresponding engine code does not exist. Future targets must use explicit target dependencies and keep test-only dependencies out of production binaries.
+`rooksac_core` is a C++20 target compiled with `position.cpp` providing foundational types, bitboard operations, position state, FEN parser, and reversible move transitions. No `rooksac_engine`, perft, or benchmark target exists because their corresponding engine code does not exist. Future targets must use explicit target dependencies and keep test-only dependencies out of production binaries.

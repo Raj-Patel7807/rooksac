@@ -1,6 +1,6 @@
 # RookSac documentation
 
-This index separates current facts from planned design. The repository has CMake build infrastructure, core chess value types, bitboard primitives, and focused tests, but no position state or move generation; implemented artifacts define current behavior. Documentation below is authoritative for project intent, governance, and documented decisions.
+This index separates current facts from planned design. The repository has CMake build infrastructure, core chess value types, bitboard primitives, position state representation, FEN parsing, reversible make/unmake execution, and focused tests, but no attack generator or legal move generation; implemented artifacts define current behavior. Documentation below is authoritative for project intent, governance, and documented decisions.
 
 ## Product direction
 

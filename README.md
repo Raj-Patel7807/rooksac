@@ -6,7 +6,7 @@ RookSac is a planned C++20 chess engine and a long-term computer-chess engineeri
 
 ## Status
 
-**Core chess primitives and build foundation complete; position and move generation have not started.** RookSac has C++20 value types, bitboard helpers, a compact move encoding, CTest coverage, and CI quality gates, but no position state, move generator, UCI support, perft tool, benchmark tool, or playable binary. See [project status](docs/PROJECT_STATUS.md) for the authoritative status summary.
+**Position state, FEN parsing, and core chess primitives complete; attack and move generation have not started.** RookSac has C++20 value types, bitboard helpers, a compact move encoding, a full position state representation with piece bitboards and square mailbox, transactional FEN parsing and serialization, exact make/unmake move execution with `UndoState`, CTest coverage, and CI quality gates. See [project status](docs/PROJECT_STATUS.md) for the authoritative status summary.
 
 ## Vision
 
