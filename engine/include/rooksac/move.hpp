@@ -9,6 +9,7 @@ namespace rooksac {
 
 class Move {
 public:
+    constexpr Move() noexcept : encoded_(0) {}
     // Bits 0-5 encode from, 6-11 encode to, and 12-14 encode promotion: N=1, B=2, R=3, Q=4.
     [[nodiscard]] static constexpr std::optional<Move> create(
         Square from, Square to, PieceType promotion = PieceType::None) noexcept {
