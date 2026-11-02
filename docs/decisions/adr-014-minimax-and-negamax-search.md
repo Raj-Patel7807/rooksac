@@ -26,3 +26,4 @@ Following the random and greedy baseline agents implemented in Sprint 08, the en
 ## Consequences
 
 RookSac now possesses look-ahead capability, correctly avoiding short-horizon blunders (such as sacrificing queens for defended pawns) and finding forced mates within the search horizon. Full state restoration is guaranteed across all search recursions.
+

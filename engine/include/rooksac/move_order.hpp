@@ -32,3 +32,4 @@ void orderMoves(const Position& position, MoveList& moves) noexcept;
 
 }  // namespace search
 }  // namespace rooksac
+

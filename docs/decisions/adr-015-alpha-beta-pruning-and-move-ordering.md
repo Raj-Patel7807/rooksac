@@ -28,3 +28,4 @@ Sprint 09 established a mathematically verified, depth-limited Negamax search. H
 ## Consequences
 
 Alpha-Beta achieves dramatic tree pruning (e.g. 27,462 nodes reduced to 785 nodes at depth 3 on tactical benchmark positions — a ~35x reduction) while producing byte-for-byte identical minimax scores and legal moves across all test positions.
+
