@@ -27,7 +27,7 @@ struct TimeAllocation {
 class TimeManager {
 public:
     static constexpr std::uint32_t kDefaultSafetyReserveMs = 50;  ///< Reserve to absorb latency and OS jitter.
-    static constexpr std::uint32_t kDefaultExpectedMoves = 40;     ///< Standard moves horizon when sudden death.
+    static constexpr std::uint32_t kDefaultExpectedMoves = 50;     ///< Standard moves horizon when sudden death.
     static constexpr std::uint32_t kMinMoveTimeMs = 1;             ///< Absolute floor for move allocation.
 
     /// \brief Allocates optimal and maximum time for a move based on clock state.

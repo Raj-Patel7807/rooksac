@@ -43,13 +43,13 @@ TimeAllocation TimeManager::allocate(
 
     // Allocate base fraction of available time plus 75% of increment
     const std::uint32_t baseTime = available / divisor;
-    const std::uint32_t incBonus = (increment * 3U) / 4U;
+    const std::uint32_t incBonus = (increment) / 2U;
     std::uint32_t optimal = baseTime + incBonus;
 
     optimal = std::clamp(optimal, kMinMoveTimeMs, available);
 
     // Hard ceiling allows extra thinking on critical turns up to 3x optimal or available time
-    std::uint32_t maximum = std::min(available, std::max(optimal * 3U, optimal + increment));
+    std::uint32_t maximum = std::min(available, std::max(optimal * 2U, optimal + increment));
     maximum = std::max(maximum, optimal);
 
     allocation.optimalTimeMs = optimal;
