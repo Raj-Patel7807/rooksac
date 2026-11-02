@@ -60,6 +60,7 @@ rooksac_configure_clang_tidy(rooksac_build_smoke_test)
 
 add_library(rooksac_core
     engine/src/attacks.cpp
+    engine/src/benchmark.cpp
     engine/src/evaluation.cpp
     engine/src/legal_movegen.cpp
     engine/src/match.cpp
@@ -144,6 +145,12 @@ target_link_libraries(rooksac PRIVATE rooksac_core)
 rooksac_configure_warnings(rooksac)
 rooksac_configure_sanitizers(rooksac)
 rooksac_configure_clang_tidy(rooksac)
+
+add_executable(rooksac_bench engine/apps/rooksac_bench_main.cpp)
+target_link_libraries(rooksac_bench PRIVATE rooksac_core)
+rooksac_configure_warnings(rooksac_bench)
+rooksac_configure_sanitizers(rooksac_bench)
+rooksac_configure_clang_tidy(rooksac_bench)
 
 if(BUILD_TESTING)
     add_test(NAME rooksac.build-smoke COMMAND rooksac_build_smoke_test)
