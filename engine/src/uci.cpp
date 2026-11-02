@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 
+#include "rooksac/benchmark.hpp"
 #include "rooksac/evaluation.hpp"
 #include "rooksac/legal_movegen.hpp"
 #include "rooksac/material.hpp"
@@ -183,6 +184,13 @@ bool EngineSession::processCommand(std::string_view line) {
         const std::size_t pos = line.find("setoption");
         const std::string_view args = line.substr(pos + 9);
         handleSetOption(args);
+    } else if (cmd == "bench") {
+        // Safe bench command: runs benchmark suite and writes to errStream to keep UCI stdout strictly protocol-compliant
+        err_ << "info string running benchmark suite...\n";
+        const auto report = bench::runBenchmark({}, 4, 1);
+        err_ << bench::formatReport(report);
+        out_ << "info nodes " << report.totalNodes << " nps " << static_cast<std::uint64_t>(report.overallNps) << '\n';
+        out_.flush();
     } else {
         err_ << "info string unknown command: " << cmd << '\n';
     }
