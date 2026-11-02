@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 
+#include "rooksac/evaluation.hpp"
 #include "rooksac/legal_movegen.hpp"
 #include "rooksac/material.hpp"
 #include "rooksac/move_list.hpp"
@@ -346,7 +347,7 @@ void EngineSession::searchWorker(search::SearchLimits limits) {
         position_,
         limits,
         [](const Position& pos) {
-            return eval::evaluateMaterialSideToMove(pos);
+            return eval::evaluateSideToMove(pos);
         },
         &stopToken_,
         &ttable_);

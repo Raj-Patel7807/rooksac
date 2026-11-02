@@ -6,6 +6,7 @@
 #include <functional>
 #include <optional>
 
+#include "rooksac/evaluation.hpp"
 #include "rooksac/material.hpp"
 #include "rooksac/move.hpp"
 #include "rooksac/move_list.hpp"
@@ -129,7 +130,7 @@ using LeafEvaluator = std::function<std::int32_t(const Position&)>;
     Position& position,
     const SearchLimits& limits,
     const LeafEvaluator& evaluator = [](const Position& pos) {
-        return eval::evaluateMaterialSideToMove(pos);
+        return eval::evaluateSideToMove(pos);
     },
     SearchStopToken* stopToken = nullptr,
     tt::TranspositionTable* ttable = nullptr);

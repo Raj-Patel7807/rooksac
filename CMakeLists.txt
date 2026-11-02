@@ -60,6 +60,7 @@ rooksac_configure_clang_tidy(rooksac_build_smoke_test)
 
 add_library(rooksac_core
     engine/src/attacks.cpp
+    engine/src/evaluation.cpp
     engine/src/legal_movegen.cpp
     engine/src/match.cpp
     engine/src/material.cpp
@@ -132,6 +133,12 @@ rooksac_configure_warnings(rooksac_zobrist_tt_test)
 rooksac_configure_sanitizers(rooksac_zobrist_tt_test)
 rooksac_configure_clang_tidy(rooksac_zobrist_tt_test)
 
+add_executable(rooksac_eval_test engine/tests/eval-test.cpp)
+target_link_libraries(rooksac_eval_test PRIVATE rooksac_core)
+rooksac_configure_warnings(rooksac_eval_test)
+rooksac_configure_sanitizers(rooksac_eval_test)
+rooksac_configure_clang_tidy(rooksac_eval_test)
+
 add_executable(rooksac engine/apps/rooksac_main.cpp)
 target_link_libraries(rooksac PRIVATE rooksac_core)
 rooksac_configure_warnings(rooksac)
@@ -148,6 +155,7 @@ if(BUILD_TESTING)
     add_test(NAME rooksac.search COMMAND rooksac_search_test)
     add_test(NAME rooksac.uci COMMAND rooksac_uci_test)
     add_test(NAME rooksac.zobrist_tt COMMAND rooksac_zobrist_tt_test)
+    add_test(NAME rooksac.eval COMMAND rooksac_eval_test)
 endif()
 
 add_custom_target(
