@@ -4,21 +4,26 @@
 
 Search explores legal move trees to select a move. RookSac plans this progression: Negamax; alpha-beta pruning; move ordering; iterative deepening; quiescence search; transposition tables and Zobrist hashing; principal variation search; aspiration windows; killer moves and history heuristics; then only justified advanced work.
 
-| Technique | Problem solved / expected benefit | Trade-off |
-| --- | --- | --- |
-| Negamax | Uniform two-player score recursion | Explores too many nodes alone. |
-| Alpha-beta | Cuts branches that cannot affect the result | Depends heavily on ordering. |
-| Ordering | Finds useful cutoffs earlier | Heuristics need validation. |
-| Iterative deepening | Produces usable partial results and ordering | Repeats shallow work. |
-| Quiescence | Reduces unstable capture-horizon errors | Can grow excessively without limits. |
-| TT / hashing | Reuses repeated-position search | Needs correct keys and bounds. |
-| PVS / aspiration | Narrows common-case search windows | Requires robust re-search behavior. |
-| Killer / history | Learns ordering from prior cutoffs | Can bias ordering and needs aging policy. |
+| Technique | Status | Problem solved / expected benefit | Trade-off |
+| --- | --- | --- | --- |
+| Negamax | Implemented | Uniform two-player score recursion with mate distance | Explores all branches; large tree. |
+| Alpha-beta | Planned (Sprint 10) | Cuts branches that cannot affect the result | Depends heavily on ordering. |
+| Ordering | Planned (Sprint 10) | Finds useful cutoffs earlier | Heuristics need validation. |
+| Iterative deepening | Planned (Sprint 10) | Produces usable partial results and ordering | Repeats shallow work. |
+| Quiescence | Planned (Sprint 11) | Reduces unstable capture-horizon errors | Can grow excessively without limits. |
+| TT / hashing | Planned (Sprint 11) | Reuses repeated-position search | Needs correct keys and bounds. |
+| PVS / aspiration | Planned | Narrows common-case search windows | Requires robust re-search behavior. |
+| Killer / history | Planned | Learns ordering from prior cutoffs | Can bias ordering and needs aging policy. |
 
-## Planned design and flow
+## Implemented architecture
 
-Search will receive a position, generate legal moves, make/unmake them, evaluate leaves, honor stop conditions, and return a best move with score and principal variation where supported. No technique in this document is implemented today.
+Depth-limited Negamax search is implemented in `rooksac/search.hpp` and `engine/src/search.cpp`:
+- **Side-to-Move Perspective:** All evaluations and returns are relative to the player to move at that node (`score = -negamax(..., depth - 1, ply + 1)`).
+- **Terminal States Before Leaf Evaluation:** Terminal conditions (50-move draw, checkmate, stalemate) are evaluated before checking `depth == 0`, ensuring leaf checkmates are scored accurately.
+- **Mate-Distance Scoring:** Delivering mate scores `kMateScore - ply` ($30000 - \text{ply}$), and receiving mate scores $-kMateScore + \text{ply}$. Faster mates are preferred and losses are delayed.
+- **Configurable Leaf Evaluator:** Accepts any callable `std::function<std::int32_t(const Position&)>`, defaulting to `eval::evaluateMaterialSideToMove`.
+- **`NegamaxAgent`:** Wraps search into the common `Agent` policy interface for match execution and self-play.
 
 ## Edge cases, testing, and future work
 
-Terminal positions, repetition and draw policies, mate-score normalization, interrupted search, bound correctness, and state restoration require tests. Compare against known positions and use deterministic node-limited tests where possible. See [TT](transposition-table.md), [time management](time-management.md), and [Alpha-Beta](https://www.chessprogramming.org/Alpha-Beta).
+Terminal positions, fifty-move draw, mate-distance normalization, and state restoration are covered by `rooksac_search_test` in `engine/tests/search-test.cpp`. Equivalent classical Minimax is validated as a mathematical baseline. Alpha-beta pruning and move ordering follow in Sprint 10. See [ADR-014](../decisions/adr-014-minimax-and-negamax-search.md), [TT](transposition-table.md), and [Alpha-Beta](https://www.chessprogramming.org/Alpha-Beta).

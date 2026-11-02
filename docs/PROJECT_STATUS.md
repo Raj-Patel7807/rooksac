@@ -14,6 +14,7 @@ This page is the authoritative status summary. It describes repository facts, no
 - Attack and pseudo-legal move generation: compile-time leaper attack lookup tables, ray-stepping slider attacks, square attack predicates, bounded `MoveList`, and pseudo-legal move generation covering all pieces, captures, promotions, en-passant, and castling paths.
 - Legal move generation and perft certification: king-safety filtering, castling path and check legality, en-passant discovered check prevention, check/checkmate/stalemate/fifty-move draw evaluation, and full perft and divide certification against canonical CPW benchmark suites.
 - Baseline agents and match harness: `Agent` interface, reproducible `RandomAgent` with injectable seed, 1-ply `GreedyAgent` using material balance, configurable `MaterialWeights`, and standalone match runner `rooksac_match_harness`.
+- Minimax and Negamax game-tree search: side-to-move-relative depth-limited negamax search, terminal state scoring (checkmate, stalemate, 50-move rule), mate-distance adjustments (`kMateScore - ply`), configurable leaf evaluators, `NegamaxAgent`, and search statistics reporting.
 
 ## In progress
 
@@ -21,9 +22,9 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Planned
 
+- Alpha-beta pruning, move ordering, and quiescence search (Sprint 10).
+- Transposition table and Zobrist hashing (Sprint 11).
 - Position evaluation, piece-square tables, and mobility terms.
-- Alpha-beta search, quiescence search, and iterative deepening (Sprint 09).
-- Transposition table and Zobrist hashing (Sprint 10).
 - Time management and UCI protocol support.
 - A standalone C++20 chess engine executable and UCI protocol support under `engine/`.
 - Perft and benchmark tools, offline research tooling, and repository tools.
@@ -37,4 +38,4 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Current limitations
 
-There is no full-depth alpha-beta search, positional evaluation (PSTs/mobility), transposition table, time management, UCI protocol implementation, or production engine executable. `rooksac_core` provides core types, bitboard operations, position state, FEN parsing, make/unmake move transitions, piece attacks, pseudo-legal and legal move generation, game evaluation, perft testing, material evaluation, baseline agents (random and greedy), and a match runner.
+There is no alpha-beta pruning, move ordering, quiescence search, positional evaluation (PSTs/mobility), transposition table, time management, UCI protocol implementation, or production engine executable. `rooksac_core` provides core types, bitboard operations, position state, FEN parsing, make/unmake move transitions, piece attacks, pseudo-legal and legal move generation, game evaluation, perft testing, material evaluation, baseline agents (random and greedy), depth-limited Negamax search, and a match runner.
