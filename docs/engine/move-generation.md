@@ -4,18 +4,29 @@
 
 Pseudo-legal moves obey how pieces move but may leave the moving side’s king in check. Legal moves additionally satisfy the king-safety rule. Correct move generation is foundational: search, evaluation comparisons, checkmate detection, and UCI output all depend on it.
 
-## Implemented attack and pseudo-legal move generation
+## Implemented legal move generation and Perft certification
 
 RookSac implements:
 - Precomputed `constexpr` lookup tables for pawn attacks, knight attacks, and king attacks.
 - Robust 4-direction ray stepping for bishop and rook attacks, with queen attacks defined as their union.
 - Attack predicates: `attacks::attacksByColor` for global attack bitboards and `attacks::isSquareAttacked` for targeted check/threat queries.
 - Bounded `MoveList` stack container (`std::array<Move, 256>`) avoiding heap allocations.
-- Pseudo-legal move generators in `rooksac::movegen`: `generatePseudoLegalMoves`, `generatePseudoLegalCaptures`, and `generatePseudoLegalQuiets`. These generate all piece movements, double pawn pushes, promotions, en-passant captures, and castling (path emptiness verified) without filtering for king safety.
+- Pseudo-legal move generators in `rooksac::movegen`: `generatePseudoLegalMoves`, `generatePseudoLegalCaptures`, and `generatePseudoLegalQuiets`.
+- Legal move filtering in `rooksac::movegen`: `generateLegalMoves`, `generateLegalCaptures`, `isLegalMove`, and check detection `isInCheck`/`isKingInCheck`.
+- Castling legality: verified that the king is not in check and that transit and destination squares are unattacked.
+- En-passant legality: full transactional simulation detecting discovered checks along rank 4/5.
+- Game state evaluation: `evaluateGameState` detecting `Checkmate`, `Stalemate`, `FiftyMoveDraw`, and `Ongoing`.
+- Standalone Perft & Divide engine in `rooksac::perft`: certified against Chess Programming Wiki reference positions (Start pos, Kiwipete, Pos 3, Pos 4, Pos 5).
 
-## Planned legal move filtering and certification
+## Draw rule support and limitations
 
-King safety filtering, check evasion, pinned piece constraints, castling through check verification, en-passant discovered check validation, checkmate/stalemate detection, and perft certification will be implemented in Sprint 07.
+- **Fifty-move rule:** Fully supported (`halfmoveClock >= 100`).
+- **Stalemate:** Fully supported (no legal moves and side to move is not in check).
+- **Threefold repetition:** Limited to active branch history until a persistent Zobrist transposition table is introduced in later sprints.
+
+## Planned search integration
+
+Move ordering, MVV-LVA, alpha-beta search, and quiescence search will be implemented in subsequent sprints.
 
 ## Alternatives and trade-offs
 

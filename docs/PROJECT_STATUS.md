@@ -12,6 +12,7 @@ This page is the authoritative status summary. It describes repository facts, no
 - Core chess primitives: strongly typed colors, pieces, files, ranks, squares, bitboards, masks, and compact move encoding with exhaustive primitive tests.
 - Position state and FEN parser: transactional FEN serialization and deserialization with structured errors, piece and occupancy bitboards with mailbox consistency, and reversible make/unmake move execution with `UndoState`.
 - Attack and pseudo-legal move generation: compile-time leaper attack lookup tables, ray-stepping slider attacks, square attack predicates, bounded `MoveList`, and pseudo-legal move generation covering all pieces, captures, promotions, en-passant, and castling paths.
+- Legal move generation and perft certification: king-safety filtering, castling path and check legality, en-passant discovered check prevention, check/checkmate/stalemate/fifty-move draw evaluation, and full perft and divide certification against canonical CPW benchmark suites.
 
 ## In progress
 
@@ -19,8 +20,10 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Planned
 
-- Legal move generation, check/checkmate detection, and perft certification under `engine/` (Sprint 07).
-- Search, evaluation, transposition tables, and time management.
+- Position evaluation, material counting, and piece-square tables (Sprint 08).
+- Alpha-beta search, quiescence search, and iterative deepening (Sprint 09).
+- Transposition table and Zobrist hashing (Sprint 10).
+- Time management and UCI protocol support.
 - A standalone C++20 chess engine executable and UCI protocol support under `engine/`.
 - Perft and benchmark tools, offline research tooling, and repository tools.
 - A separate application layer under `app/` that communicates with the engine through UCI/process boundaries.
@@ -33,4 +36,4 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Current limitations
 
-There is no legal move generator (king-in-check filtering is planned for Sprint 07), search, evaluation, perft tool, benchmark tool, UCI protocol implementation, or engine executable. `rooksac_core` provides core types, bitboard operations, position state, FEN parsing, make/unmake move transitions, piece attacks, and pseudo-legal move generation.
+There is no search, evaluation, transposition table, time management, UCI protocol implementation, or engine executable. `rooksac_core` provides core types, bitboard operations, position state, FEN parsing, make/unmake move transitions, piece attacks, pseudo-legal and legal move generation, game evaluation, and perft testing.

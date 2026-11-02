@@ -41,4 +41,4 @@ ctest --preset clang-asan-ubsan
 
 ## Current target boundary
 
-`rooksac_core` is a C++20 target compiled with `position.cpp`, `attacks.cpp`, and `movegen.cpp` providing foundational types, bitboard operations, position state, FEN parser, reversible move transitions, piece attacks, and pseudo-legal move generation. No `rooksac_engine`, perft, or benchmark target exists because their corresponding engine code does not exist. Future targets must use explicit target dependencies and keep test-only dependencies out of production binaries.
+`rooksac_core` is a C++20 target compiled with `position.cpp`, `attacks.cpp`, `movegen.cpp`, `legal_movegen.cpp`, and `perft.cpp` providing foundational types, bitboard operations, position state, FEN parser, reversible move transitions, piece attacks, pseudo-legal and legal move generation, and perft calculation. No `rooksac_engine` or benchmark target exists because their corresponding engine code does not exist. Future targets must use explicit target dependencies and keep test-only dependencies out of production binaries.
