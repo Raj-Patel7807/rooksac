@@ -22,7 +22,9 @@ struct ScoredMove {
 std::int32_t scoreMove(
     const Position& position,
     Move move,
-    std::optional<Move> pvMove) noexcept {
+    std::optional<Move> pvMove,
+    const KillerTable* killers,
+    std::uint32_t ply) noexcept {
     // 1. PV move from previous iteration receives absolute highest priority
     if (pvMove.has_value() && move.encoded() == pvMove->encoded()) {
         return kPvMoveBaseScore;
@@ -64,13 +66,26 @@ std::int32_t scoreMove(
         return kCaptureBaseScore + (victimVal * 10 - attackerVal);
     }
 
+    // 5. Killer move heuristic: quiet moves that previously caused a beta cutoff at this ply
+    if (killers != nullptr && ply < SearchOptions::kMaxKillerPly) {
+        const auto& plyKillers = (*killers)[ply];
+        for (std::uint32_t k = 0; k < SearchOptions::kKillerSlots; ++k) {
+            if (plyKillers[k].encoded() == move.encoded()) {
+                // First killer slot scores higher than second
+                return kKillerBaseScore - static_cast<std::int32_t>(k);
+            }
+        }
+    }
+
     return kQuietBaseScore;
 }
 
 void orderMoves(
     const Position& position,
     MoveList& moves,
-    std::optional<Move> pvMove) noexcept {
+    std::optional<Move> pvMove,
+    const KillerTable* killers,
+    std::uint32_t ply) noexcept {
     const std::size_t count = moves.size();
     if (count <= 1) {
         return;
@@ -79,7 +94,7 @@ void orderMoves(
     std::array<ScoredMove, MoveList::kMaxCapacity> scoredMoves{};
     for (std::size_t i = 0; i < count; ++i) {
         scoredMoves[i].move = moves[i];
-        scoredMoves[i].score = scoreMove(position, moves[i], pvMove);
+        scoredMoves[i].score = scoreMove(position, moves[i], pvMove, killers, ply);
     }
 
     // Stable sort ensures moves with the same score maintain their deterministic generation order.
@@ -93,6 +108,23 @@ void orderMoves(
     for (std::size_t i = 0; i < count; ++i) {
         moves[i] = scoredMoves[i].move;
     }
+}
+
+void storeKillerMove(KillerTable& killers, std::uint32_t ply, Move move) noexcept {
+    if (ply >= SearchOptions::kMaxKillerPly) {
+        return;
+    }
+
+    auto& plyKillers = killers[ply];
+
+    // Avoid storing duplicate (already in slot 0)
+    if (plyKillers[0].encoded() == move.encoded()) {
+        return;
+    }
+
+    // Shift existing killers down: slot 1 <- slot 0, slot 0 <- new move
+    plyKillers[1] = plyKillers[0];
+    plyKillers[0] = move;
 }
 
 }  // namespace search
