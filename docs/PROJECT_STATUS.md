@@ -16,6 +16,7 @@ This page is the authoritative status summary. It describes repository facts, no
 - Baseline agents and match harness: `Agent` interface, reproducible `RandomAgent` with injectable seed, 1-ply `GreedyAgent` using material balance, configurable `MaterialWeights`, and standalone match runner `rooksac_match_harness`.
 - Minimax and Negamax game-tree search: side-to-move-relative depth-limited negamax search, terminal state scoring (checkmate, stalemate, 50-move rule), mate-distance adjustments (`kMateScore - ply`), configurable leaf evaluators, `NegamaxAgent`, and search statistics reporting.
 - Alpha-Beta pruning and move ordering: fail-soft Alpha-Beta search with cutoffs, staged move ordering (capture-promotions, promotions, MVV-LVA captures, quiet moves), unpruned differential testing path (`searchMinimax`), and substantial node reduction verified.
+- Iterative deepening, quiescence, and time management: progressive deepening from depth 1 upward with PV-first move ordering, tactical quiescence search with check evasions and stand-pat rules, dedicated `TimeManager` with safety reserve and emergency clock handling, cooperative `SearchStopToken`, and guaranteed legal fallback moves.
 
 ## In progress
 
@@ -23,10 +24,9 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Planned
 
-- Quiescence search, iterative deepening, and aspiration windows (Sprint 11).
 - Transposition table and Zobrist hashing (Sprint 12).
 - Position evaluation, piece-square tables, and mobility terms.
-- Time management and UCI protocol support.
+- Time management protocol bindings and UCI protocol support.
 - A standalone C++20 chess engine executable and UCI protocol support under `engine/`.
 - Perft and benchmark tools, offline research tooling, and repository tools.
 - A separate application layer under `app/` that communicates with the engine through UCI/process boundaries.
@@ -39,4 +39,4 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Current limitations
 
-There is no quiescence search, iterative deepening, transposition table, positional evaluation (PSTs/mobility), time management, UCI protocol implementation, or production engine executable. `rooksac_core` provides core types, bitboard operations, position state, FEN parsing, make/unmake move transitions, piece attacks, pseudo-legal and legal move generation, game evaluation, perft testing, material evaluation, baseline agents (random and greedy), fail-soft Alpha-Beta search with staged move ordering, and a match runner.
+There is no transposition table, Zobrist hashing, positional evaluation (PSTs/mobility), UCI protocol implementation, or production engine executable. `rooksac_core` provides core types, bitboard operations, position state, FEN parsing, make/unmake move transitions, piece attacks, pseudo-legal and legal move generation, game evaluation, perft testing, material evaluation, baseline agents (random and greedy), fail-soft Alpha-Beta search with staged move ordering, iterative deepening, quiescence search, time management, and a match runner.
