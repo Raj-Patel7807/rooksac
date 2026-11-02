@@ -67,7 +67,8 @@ add_library(rooksac_core
     engine/src/movegen.cpp
     engine/src/perft.cpp
     engine/src/position.cpp
-    engine/src/search.cpp)
+    engine/src/search.cpp
+    engine/src/time_management.cpp)
 target_compile_features(rooksac_core PUBLIC cxx_std_20)
 target_include_directories(rooksac_core PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/engine/include>)
 rooksac_configure_warnings(rooksac_core)
