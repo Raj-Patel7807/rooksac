@@ -30,3 +30,4 @@ std::int32_t evaluateMaterialSideToMove(const Position& position, const Material
 
 }  // namespace eval
 }  // namespace rooksac
+

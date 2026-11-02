@@ -28,3 +28,4 @@ struct MatchResult {
     std::uint32_t maxPlies = 200);
 
 }  // namespace rooksac
+

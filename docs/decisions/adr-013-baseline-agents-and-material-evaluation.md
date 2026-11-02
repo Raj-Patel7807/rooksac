@@ -24,3 +24,4 @@ Before developing complex search algorithms (Alpha-Beta, Quiescence, Iterative D
 ## Consequences
 
 End-to-end agent decision contracts are validated and automated. Future search and evaluation engines can implement `Agent` or use `playMatch` directly for regression and self-play testing.
+

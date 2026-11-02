@@ -41,3 +41,4 @@ inline constexpr MaterialWeights kDefaultMaterialWeights{};
 
 }  // namespace eval
 }  // namespace rooksac
+
