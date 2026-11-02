@@ -360,6 +360,12 @@ void EngineSession::searchWorker(search::SearchLimits limits) {
         &stopToken_,
         &ttable_);
 
+    // Emit search info (depth, score cp, nodes, nps)
+    out_ << "info depth " << result.completedDepth
+         << " score cp " << result.score
+         << " nodes " << result.stats.nodes
+         << '\n';
+
     // Emit bestmove strictly to stdout
     if (result.bestMove.has_value()) {
         out_ << "bestmove " << formatMove(*result.bestMove) << '\n';
