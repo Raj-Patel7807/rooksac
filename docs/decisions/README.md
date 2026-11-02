@@ -14,6 +14,7 @@ This file is the initial ADR register. Status distinguishes an adopted working d
 - [ADR-014 — Minimax and Negamax game-tree search](adr-014-minimax-and-negamax-search.md)
 - [ADR-015 — Alpha-Beta pruning, fail-soft bounds, and staged move ordering](adr-015-alpha-beta-pruning-and-move-ordering.md)
 - [ADR-016 — Iterative deepening, quiescence search, and cooperative time control](adr-016-iterative-deepening-quiescence-and-time-control.md)
+- [ADR-017 — UCI protocol and standalone engine executable](adr-017-uci-protocol-and-standalone-engine-executable.md)
 
 ## ADR-001 — C++20 for the engine
 
