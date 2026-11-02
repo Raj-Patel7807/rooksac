@@ -145,7 +145,9 @@ void testSearchConsistencyWithAndWithoutTT() {
     search::SearchLimits limits(3);
 
     // 1. Search without TT
-    auto resWithout = search::search(pos, limits);
+    auto resWithout = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateMaterialSideToMove(p);
+    });
 
     // 2. Search with TT
     tt::TranspositionTable ttable(4 * 1024 * 1024);
