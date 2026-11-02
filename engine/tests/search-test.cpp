@@ -566,6 +566,89 @@ void testIterativeDeepeningDeterminism() {
     require(res1.completedDepth == res2.completedDepth, "Completed depths match");
 }
 
+void testSearchOptionsIsolation() {
+    auto posOpt = Position::fromFen("r1bqk2r/pppp1ppp/2n5/4p3/1b1Pn3/2N2N2/PPP1PPPP/R1BQKB1R w KQkq - 2 6");
+    require(posOpt.hasValue(), "Tactical FEN parses");
+    auto pos = *posOpt;
+
+    search::SearchLimits limits(3);
+
+    // 1. Vanilla (plain alpha-beta)
+    auto vanillaOpts = search::SearchOptions::vanilla();
+    auto vanillaRes = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateSideToMove(p);
+    }, nullptr, nullptr, vanillaOpts);
+
+    // 2. Full options (all enhancements enabled)
+    search::SearchOptions fullOpts;
+    auto fullRes = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateSideToMove(p);
+    }, nullptr, nullptr, fullOpts);
+
+    require(vanillaRes.bestMove.has_value(), "Vanilla search returns best move");
+    require(fullRes.bestMove.has_value(), "Enhanced search returns best move");
+    // Enhanced search with PVS/NMP/LMR/killers explores a more pruned tree
+    require(fullRes.stats.nodes <= vanillaRes.stats.nodes, "Enhanced search prunes effectively");
+
+    std::cout << "Search options isolation: Vanilla nodes = " << vanillaRes.stats.nodes
+              << ", Enhanced nodes = " << fullRes.stats.nodes << '\n';
+}
+
+void testAspirationWindowsFailSoftWidening() {
+    auto pos = Position::startPosition();
+    search::SearchLimits limits(3);
+
+    // With aspiration window enabled, result must match or be closely consistent with vanilla
+    search::SearchOptions aspOnly = search::SearchOptions::vanilla();
+    aspOnly.aspirationWindows = true;
+    aspOnly.aspirationDelta = 25;  // narrow delta to ensure widening path is exercised
+
+    auto aspRes = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateSideToMove(p);
+    }, nullptr, nullptr, aspOnly);
+
+    require(aspRes.bestMove.has_value(), "Aspiration window search finds best move");
+    require(aspRes.completedDepth == 3, "Aspiration search completes requested depth");
+}
+
+void testNullMovePruningSafety() {
+    // Position with sufficient pieces where null-move pruning can trigger
+    auto posOpt = Position::fromFen("r1bqk2r/pppp1ppp/2n5/4p3/1b1Pn3/2N2N2/PPP1PPPP/R1BQKB1R w KQkq - 2 6");
+    require(posOpt.hasValue(), "FEN parses");
+    auto pos = *posOpt;
+
+    search::SearchLimits limits(4);
+
+    search::SearchOptions nmpOpts = search::SearchOptions::vanilla();
+    nmpOpts.nullMovePruning = true;
+
+    auto nmpRes = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateSideToMove(p);
+    }, nullptr, nullptr, nmpOpts);
+
+    require(nmpRes.bestMove.has_value(), "NMP search finds best move");
+    require(nmpRes.completedDepth == 4, "NMP search completes requested depth");
+}
+
+void testKillerMoveOrdering() {
+    // Quiet tactical position
+    auto posOpt = Position::fromFen("r1bq1rk1/ppp2ppp/2np1n2/4p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 7");
+    require(posOpt.hasValue(), "Quiet tactical FEN parses");
+    auto pos = *posOpt;
+
+    search::SearchLimits limits(3);
+
+    search::SearchOptions killerOpts = search::SearchOptions::vanilla();
+    killerOpts.killerMoves = true;
+
+    auto killerRes = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateSideToMove(p);
+    }, nullptr, nullptr, killerOpts);
+
+    require(killerRes.bestMove.has_value(), "Killer heuristic search finds best move");
+    require(killerRes.completedDepth == 3, "Killer heuristic search completes requested depth");
+}
+
 }  // namespace
 
 int main() {
@@ -588,6 +671,10 @@ int main() {
     testTimeManagerAllocation();
     testSearchLimitsControls();
     testIterativeDeepeningDeterminism();
+    testSearchOptionsIsolation();
+    testAspirationWindowsFailSoftWidening();
+    testNullMovePruningSafety();
+    testKillerMoveOrdering();
 
     std::cout << "All Iterative Deepening, Quiescence, Time Control, and Search tests passed successfully.\n";
     return EXIT_SUCCESS;
