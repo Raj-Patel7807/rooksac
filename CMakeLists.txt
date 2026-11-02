@@ -61,6 +61,8 @@ rooksac_configure_clang_tidy(rooksac_build_smoke_test)
 add_library(rooksac_core
     engine/src/attacks.cpp
     engine/src/legal_movegen.cpp
+    engine/src/match.cpp
+    engine/src/material.cpp
     engine/src/movegen.cpp
     engine/src/perft.cpp
     engine/src/position.cpp)
@@ -94,12 +96,25 @@ rooksac_configure_warnings(rooksac_perft_test)
 rooksac_configure_sanitizers(rooksac_perft_test)
 rooksac_configure_clang_tidy(rooksac_perft_test)
 
+add_executable(rooksac_agent_test engine/tests/agent-test.cpp)
+target_link_libraries(rooksac_agent_test PRIVATE rooksac_core)
+rooksac_configure_warnings(rooksac_agent_test)
+rooksac_configure_sanitizers(rooksac_agent_test)
+rooksac_configure_clang_tidy(rooksac_agent_test)
+
+add_executable(rooksac_match_harness engine/src/match_harness.cpp)
+target_link_libraries(rooksac_match_harness PRIVATE rooksac_core)
+rooksac_configure_warnings(rooksac_match_harness)
+rooksac_configure_sanitizers(rooksac_match_harness)
+rooksac_configure_clang_tidy(rooksac_match_harness)
+
 if(BUILD_TESTING)
     add_test(NAME rooksac.build-smoke COMMAND rooksac_build_smoke_test)
     add_test(NAME rooksac.core-types COMMAND rooksac_core_types_test)
     add_test(NAME rooksac.position COMMAND rooksac_position_test)
     add_test(NAME rooksac.movegen COMMAND rooksac_movegen_test)
     add_test(NAME rooksac.perft COMMAND rooksac_perft_test)
+    add_test(NAME rooksac.agent COMMAND rooksac_agent_test)
 endif()
 
 add_custom_target(
