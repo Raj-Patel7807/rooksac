@@ -13,6 +13,7 @@ This file is the initial ADR register. Status distinguishes an adopted working d
 - [ADR-013 — Baseline agents, material evaluation, and self-play match harness](adr-013-baseline-agents-and-material-evaluation.md)
 - [ADR-014 — Minimax and Negamax game-tree search](adr-014-minimax-and-negamax-search.md)
 - [ADR-015 — Alpha-Beta pruning, fail-soft bounds, and staged move ordering](adr-015-alpha-beta-pruning-and-move-ordering.md)
+- [ADR-016 — Iterative deepening, quiescence search, and cooperative time control](adr-016-iterative-deepening-quiescence-and-time-control.md)
 
 ## ADR-001 — C++20 for the engine
 
