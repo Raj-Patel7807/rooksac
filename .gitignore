@@ -25,6 +25,8 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+*.pt
+*.onnx
 
 # Editors and operating systems
 .idea/
