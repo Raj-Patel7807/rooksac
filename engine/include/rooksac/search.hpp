@@ -35,6 +35,7 @@ inline constexpr std::int32_t kDrawScore = 0;
 /// \brief Search statistics collected during tree exploration.
 struct SearchStats {
     std::uint64_t nodes = 0;
+    std::uint64_t cutoffs = 0;
     std::uint32_t maxDepth = 0;
 };
 
@@ -53,7 +54,7 @@ struct SearchResult {
 /// \brief Leaf evaluator signature (returns score in centipawns from side to move perspective).
 using LeafEvaluator = std::function<std::int32_t(const Position&)>;
 
-/// \brief Recursive depth-limited negamax search.
+/// \brief Recursive depth-limited unpruned negamax search (kept for differential testing).
 /// \param position The current position (restored to original state upon return).
 /// \param depth Remaining search depth in plies.
 /// \param ply Current depth from the root in plies (used for mate-distance scoring).
@@ -67,7 +68,33 @@ using LeafEvaluator = std::function<std::int32_t(const Position&)>;
     SearchStats& stats,
     const LeafEvaluator& evaluator);
 
-/// \brief Root search function finding the best legal move and its minimax score.
+/// \brief Recursive depth-limited alpha-beta search with fail-soft bounds and move ordering.
+/// \param position The current position (restored to original state upon return).
+/// \param alpha Lower score bound from the current player's perspective.
+/// \param beta Upper score bound from the current player's perspective.
+/// \param depth Remaining search depth in plies.
+/// \param ply Current depth from the root in plies (used for mate-distance scoring).
+/// \param stats Search statistics to accumulate (nodes, cutoffs, max depth).
+/// \param evaluator Static evaluation function for leaf nodes.
+/// \return Score from the perspective of the side to move at this node.
+[[nodiscard]] std::int32_t alphaBeta(
+    Position& position,
+    std::int32_t alpha,
+    std::int32_t beta,
+    std::uint32_t depth,
+    std::uint32_t ply,
+    SearchStats& stats,
+    const LeafEvaluator& evaluator);
+
+/// \brief Unpruned minimax root search (kept for shallow differential testing).
+[[nodiscard]] SearchResult searchMinimax(
+    Position& position,
+    const SearchLimits& limits,
+    const LeafEvaluator& evaluator = [](const Position& pos) {
+        return eval::evaluateMaterialSideToMove(pos);
+    });
+
+/// \brief Root search function finding the best legal move and score using Alpha-Beta pruning.
 /// \param position The root position (restored to original state upon return).
 /// \param limits Search constraints (depth).
 /// \param evaluator Leaf evaluator (defaults to evaluateMaterialSideToMove).
