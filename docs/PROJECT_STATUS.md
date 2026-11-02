@@ -18,6 +18,7 @@ This page is the authoritative status summary. It describes repository facts, no
 - Alpha-Beta pruning and move ordering: fail-soft Alpha-Beta search with cutoffs, staged move ordering (capture-promotions, promotions, MVV-LVA captures, quiet moves), unpruned differential testing path (`searchMinimax`), and substantial node reduction verified.
 - Iterative deepening, quiescence, and time management: progressive deepening from depth 1 upward with PV-first move ordering, tactical quiescence search with check evasions and stand-pat rules, dedicated `TimeManager` with safety reserve and emergency clock handling, cooperative `SearchStopToken`, and guaranteed legal fallback moves.
 - UCI protocol and standalone executable: Universal Chess Interface protocol implementation (`rooksac::uci::EngineSession`) supporting `uci`, `isready`, `ucinewgame`, `position`, `go` (depth, movetime, wtime/btime/winc/binc, nodes, infinite), `stop`, and `quit`; strict stdout stream discipline, stderr diagnostic routing, and standalone `rooksac` executable.
+- Zobrist hashing and transposition table: deterministic 64-bit Zobrist keys updated incrementally on make/unmake and verified with full recalculation; memory-bounded `TranspositionTable` with 16-byte packed entries, depth-preferred replacement with generational aging, mate score ply normalization, and configurable UCI `Hash` option.
 
 ## In progress
 
@@ -25,8 +26,7 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Planned
 
-- Transposition table and Zobrist hashing (Sprint 13).
-- Position evaluation, piece-square tables, and mobility terms.
+- Position evaluation, piece-square tables, and mobility terms (Sprint 14).
 - Perft and benchmark tools, offline research tooling, and repository tools.
 - A separate application layer under `app/` that communicates with the engine through UCI/process boundaries.
 - CI, packaging, deployment, and release processes.
@@ -38,4 +38,4 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Current limitations
 
-There is no transposition table, Zobrist hashing, or positional evaluation (PSTs/mobility). `rooksac_core` provides core types, bitboard operations, position state, FEN parsing, make/unmake move transitions, piece attacks, pseudo-legal and legal move generation, game evaluation, perft testing, material evaluation, baseline agents (random and greedy), fail-soft Alpha-Beta search with staged move ordering, iterative deepening, quiescence search, time management, UCI protocol handling, standalone executable `rooksac`, and match runner `rooksac_match_harness`.
+There is no complex positional evaluation (PSTs/mobility terms). `rooksac_core` provides core types, bitboard operations, position state, FEN parsing, make/unmake move transitions, piece attacks, pseudo-legal and legal move generation, game evaluation, perft testing, material evaluation, baseline agents (random and greedy), fail-soft Alpha-Beta search with staged move ordering, iterative deepening, quiescence search, time management, deterministic Zobrist hashing, memory-bounded transposition tables, UCI protocol handling, standalone executable `rooksac`, and match runner `rooksac_match_harness`.
