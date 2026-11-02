@@ -27,7 +27,7 @@ public:
             return std::nullopt;
         }
 
-        const search::SearchLimits limits{.depth = depth_};
+        const search::SearchLimits limits(depth_);
         const auto result = search::search(position, limits, [this](const Position& pos) {
             return eval::evaluateMaterialSideToMove(pos, weights_);
         });

@@ -1,5 +1,7 @@
 #include "rooksac/search.hpp"
 
+#include <algorithm>
+#include <chrono>
 #include <cstdint>
 
 #include "rooksac/legal_movegen.hpp"
@@ -7,6 +9,236 @@
 
 namespace rooksac {
 namespace search {
+
+namespace {
+
+struct SearchContext {
+    SearchStopToken* stopToken = nullptr;
+    std::optional<std::chrono::steady_clock::time_point> deadline;
+    std::optional<std::uint64_t> maxNodes;
+    std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
+    bool aborted = false;
+
+    [[nodiscard]] bool checkStop(std::uint64_t currentNodes) noexcept {
+        if (aborted) {
+            return true;
+        }
+        if ((currentNodes & (kStopCheckInterval - 1U)) == 0) {
+            if (stopToken && stopToken->isStopped()) {
+                aborted = true;
+                return true;
+            }
+            if (maxNodes.has_value() && currentNodes >= *maxNodes) {
+                aborted = true;
+                return true;
+            }
+            if (deadline.has_value() && std::chrono::steady_clock::now() >= *deadline) {
+                aborted = true;
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
+std::int32_t quiescenceInternal(
+    Position& position,
+    std::int32_t alpha,
+    std::int32_t beta,
+    std::uint32_t ply,
+    SearchStats& stats,
+    const LeafEvaluator& evaluator,
+    SearchContext* context) {
+    ++stats.nodes;
+    ++stats.qnodes;
+    if (ply > stats.maxDepth) {
+        stats.maxDepth = ply;
+    }
+
+    if (context && context->checkStop(stats.nodes)) {
+        return alpha;
+    }
+
+    // 1. Terminal draw: 50-move rule check
+    if (position.halfmoveClock() >= 100) {
+        return kDrawScore;
+    }
+
+    // 2. Check handling in quiescence:
+    // If king is in check, stand-pat is NOT permitted. All legal evasions must be searched.
+    const bool inCheck = movegen::isInCheck(position);
+    if (inCheck) {
+        MoveList evasions;
+        movegen::generateLegalMoves(position, evasions);
+
+        if (evasions.empty()) {
+            return -kMateScore + static_cast<std::int32_t>(ply);
+        }
+
+        orderMoves(position, evasions);
+
+        std::int32_t bestScore = -kInfinity;
+        for (std::size_t i = 0; i < evasions.size(); ++i) {
+            const Move m = evasions[i];
+            UndoState undo;
+            (void)position.makeMove(m, undo);
+            const std::int32_t score = -quiescenceInternal(
+                position, -beta, -alpha, ply + 1, stats, evaluator, context);
+            position.unmakeMove(m, undo);
+
+            if (context && context->aborted) {
+                return alpha;
+            }
+
+            if (score > bestScore) {
+                bestScore = score;
+            }
+            if (score > alpha) {
+                alpha = score;
+            }
+            if (alpha >= beta) {
+                ++stats.cutoffs;
+                break;
+            }
+        }
+        return bestScore;
+    }
+
+    // 3. Not in check: Stand-pat (the side to move can choose not to capture)
+    const std::int32_t standPat = evaluator(position);
+    if (standPat >= beta) {
+        return standPat;
+    }
+    if (standPat > alpha) {
+        alpha = standPat;
+    }
+
+    // 4. Maximum quiescence search depth limit safeguard
+    if (ply >= kMaxQsearchDepth) {
+        return standPat;
+    }
+
+    // 5. Generate and search only captures and promotions
+    MoveList captures;
+    movegen::generateLegalCaptures(position, captures);
+    if (captures.empty()) {
+        return standPat;
+    }
+
+    // Order captures by MVV-LVA priority
+    orderMoves(position, captures);
+
+    std::int32_t bestScore = standPat;
+    for (std::size_t i = 0; i < captures.size(); ++i) {
+        const Move m = captures[i];
+        UndoState undo;
+        (void)position.makeMove(m, undo);
+        const std::int32_t score = -quiescenceInternal(
+            position, -beta, -alpha, ply + 1, stats, evaluator, context);
+        position.unmakeMove(m, undo);
+
+        if (context && context->aborted) {
+            return alpha;
+        }
+
+        if (score > bestScore) {
+            bestScore = score;
+        }
+        if (score > alpha) {
+            alpha = score;
+        }
+        if (alpha >= beta) {
+            ++stats.cutoffs;
+            break;
+        }
+    }
+
+    return bestScore;
+}
+
+std::int32_t alphaBetaInternal(
+    Position& position,
+    std::int32_t alpha,
+    std::int32_t beta,
+    std::uint32_t depth,
+    std::uint32_t ply,
+    SearchStats& stats,
+    const LeafEvaluator& evaluator,
+    SearchContext* context) {
+    ++stats.nodes;
+    if (ply > stats.maxDepth) {
+        stats.maxDepth = ply;
+    }
+
+    if (context && context->checkStop(stats.nodes)) {
+        return alpha;
+    }
+
+    // 1. Terminal draw: 50-move rule check
+    if (position.halfmoveClock() >= 100) {
+        return kDrawScore;
+    }
+
+    // 2. Generate legal moves to detect terminal conditions
+    MoveList legalMoves;
+    movegen::generateLegalMoves(position, legalMoves);
+
+    if (legalMoves.empty()) {
+        if (movegen::isInCheck(position)) {
+            return -kMateScore + static_cast<std::int32_t>(ply);
+        }
+        return kDrawScore;
+    }
+
+    // 3. Leaf node: transition to Quiescence search
+    if (depth == 0) {
+        return quiescenceInternal(position, alpha, beta, ply, stats, evaluator, context);
+    }
+
+    // 4. Staged move ordering
+    orderMoves(position, legalMoves);
+
+    // 5. Fail-soft Alpha-Beta recursion
+    std::int32_t bestScore = -kInfinity;
+
+    for (std::size_t i = 0; i < legalMoves.size(); ++i) {
+        const Move m = legalMoves[i];
+        UndoState undo;
+        (void)position.makeMove(m, undo);
+        const std::int32_t score = -alphaBetaInternal(
+            position, -beta, -alpha, depth - 1, ply + 1, stats, evaluator, context);
+        position.unmakeMove(m, undo);
+
+        if (context && context->aborted) {
+            return alpha;
+        }
+
+        if (score > bestScore) {
+            bestScore = score;
+        }
+        if (score > alpha) {
+            alpha = score;
+        }
+        if (alpha >= beta) {
+            ++stats.cutoffs;
+            break;  // Beta cutoff (fail-high)
+        }
+    }
+
+    return bestScore;
+}
+
+}  // namespace
+
+std::int32_t quiescence(
+    Position& position,
+    std::int32_t alpha,
+    std::int32_t beta,
+    std::uint32_t ply,
+    SearchStats& stats,
+    const LeafEvaluator& evaluator) {
+    return quiescenceInternal(position, alpha, beta, ply, stats, evaluator, nullptr);
+}
 
 std::int32_t negamax(
     Position& position,
@@ -19,30 +251,24 @@ std::int32_t negamax(
         stats.maxDepth = ply;
     }
 
-    // 1. Terminal draw: 50-move rule check (evaluated before branching)
     if (position.halfmoveClock() >= 100) {
         return kDrawScore;
     }
 
-    // 2. Generate legal moves to detect terminal conditions (checkmate/stalemate)
     MoveList legalMoves;
     movegen::generateLegalMoves(position, legalMoves);
 
     if (legalMoves.empty()) {
         if (movegen::isInCheck(position)) {
-            // Checkmated: penalize with distance from root to prefer shorter mates and delay loss
             return -kMateScore + static_cast<std::int32_t>(ply);
         }
-        // Stalemate: game ends in draw
         return kDrawScore;
     }
 
-    // 3. Leaf node: static evaluation is evaluated only after confirming state is not terminal
     if (depth == 0) {
         return evaluator(position);
     }
 
-    // 4. Recursive exploration
     std::int32_t bestScore = -kInfinity;
 
     for (std::size_t i = 0; i < legalMoves.size(); ++i) {
@@ -68,59 +294,7 @@ std::int32_t alphaBeta(
     std::uint32_t ply,
     SearchStats& stats,
     const LeafEvaluator& evaluator) {
-    ++stats.nodes;
-    if (ply > stats.maxDepth) {
-        stats.maxDepth = ply;
-    }
-
-    // 1. Terminal draw: 50-move rule check
-    if (position.halfmoveClock() >= 100) {
-        return kDrawScore;
-    }
-
-    // 2. Generate legal moves to detect terminal conditions
-    MoveList legalMoves;
-    movegen::generateLegalMoves(position, legalMoves);
-
-    if (legalMoves.empty()) {
-        if (movegen::isInCheck(position)) {
-            return -kMateScore + static_cast<std::int32_t>(ply);
-        }
-        return kDrawScore;
-    }
-
-    // 3. Leaf node
-    if (depth == 0) {
-        return evaluator(position);
-    }
-
-    // 4. Staged move ordering: captures and promotions first
-    orderMoves(position, legalMoves);
-
-    // 5. Fail-soft Alpha-Beta recursion
-    std::int32_t bestScore = -kInfinity;
-
-    for (std::size_t i = 0; i < legalMoves.size(); ++i) {
-        const Move m = legalMoves[i];
-        UndoState undo;
-        (void)position.makeMove(m, undo);
-        const std::int32_t score = -alphaBeta(
-            position, -beta, -alpha, depth - 1, ply + 1, stats, evaluator);
-        position.unmakeMove(m, undo);
-
-        if (score > bestScore) {
-            bestScore = score;
-        }
-        if (score > alpha) {
-            alpha = score;
-        }
-        if (alpha >= beta) {
-            ++stats.cutoffs;
-            break;  // Beta cutoff (fail-high)
-        }
-    }
-
-    return bestScore;
+    return alphaBetaInternal(position, alpha, beta, depth, ply, stats, evaluator, nullptr);
 }
 
 SearchResult searchMinimax(
@@ -175,28 +349,44 @@ SearchResult searchMinimax(
 
     result.bestMove = bestMove;
     result.score = bestScore;
+    result.completedDepth = limits.depth;
     return result;
 }
 
 SearchResult search(
     Position& position,
     const SearchLimits& limits,
-    const LeafEvaluator& evaluator) {
-    SearchResult result;
-    result.stats.nodes = 1;  // Root node visited
-    result.stats.maxDepth = 0;
-    result.stats.cutoffs = 0;
+    const LeafEvaluator& evaluator,
+    SearchStopToken* stopToken) {
+    SearchContext context;
+    context.stopToken = stopToken;
+    context.maxNodes = limits.maxNodes;
 
-    if (limits.depth == 0) {
-        result.score = evaluator(position);
-        result.bestMove = std::nullopt;
-        return result;
+    // Time allocation setup
+    std::optional<std::uint32_t> optimalTimeMs;
+    if (limits.timeAllocation.has_value()) {
+        optimalTimeMs = limits.timeAllocation->optimalTimeMs;
+        context.deadline = context.startTime + std::chrono::milliseconds(limits.timeAllocation->maximumTimeMs);
+    } else if (limits.moveTimeMs.has_value() || limits.remainingTimeMs.has_value()) {
+        TimeControl tc;
+        tc.moveTimeMs = limits.moveTimeMs;
+        tc.remainingTimeMs = limits.remainingTimeMs;
+        tc.incrementMs = limits.incrementMs;
+        tc.movesToGo = limits.movesToGo;
+        const TimeAllocation alloc = TimeManager::allocate(tc);
+        optimalTimeMs = alloc.optimalTimeMs;
+        context.deadline = context.startTime + std::chrono::milliseconds(alloc.maximumTimeMs);
     }
 
+    SearchResult lastCompletedResult;
+    lastCompletedResult.stats.nodes = 1;  // Root node visited
+    lastCompletedResult.stats.maxDepth = 0;
+    lastCompletedResult.stats.cutoffs = 0;
+
     if (position.halfmoveClock() >= 100) {
-        result.score = kDrawScore;
-        result.bestMove = std::nullopt;
-        return result;
+        lastCompletedResult.score = kDrawScore;
+        lastCompletedResult.bestMove = std::nullopt;
+        return lastCompletedResult;
     }
 
     MoveList legalMoves;
@@ -204,42 +394,86 @@ SearchResult search(
 
     if (legalMoves.empty()) {
         if (movegen::isInCheck(position)) {
-            result.score = -kMateScore;
+            lastCompletedResult.score = -kMateScore;
         } else {
-            result.score = kDrawScore;
+            lastCompletedResult.score = kDrawScore;
         }
-        result.bestMove = std::nullopt;
-        return result;
+        lastCompletedResult.bestMove = std::nullopt;
+        return lastCompletedResult;
     }
 
-    // Staged move ordering at the root node
-    orderMoves(position, legalMoves);
+    // Legal fallback move guaranteed before starting deep search
+    lastCompletedResult.bestMove = legalMoves[0];
+    lastCompletedResult.score = evaluator(position);
+    lastCompletedResult.completedDepth = 0;
 
-    std::int32_t alpha = -kInfinity;
-    const std::int32_t beta = kInfinity;
-    std::int32_t bestScore = -kInfinity;
-    std::optional<Move> bestMove = legalMoves[0];
+    std::optional<Move> pvMove = std::nullopt;
+    const std::uint32_t maxDepth = std::clamp(limits.depth, 1U, 64U);
 
-    for (std::size_t i = 0; i < legalMoves.size(); ++i) {
-        const Move m = legalMoves[i];
-        UndoState undo;
-        (void)position.makeMove(m, undo);
-        const std::int32_t score = -alphaBeta(
-            position, -beta, -alpha, limits.depth - 1, 1, result.stats, evaluator);
-        position.unmakeMove(m, undo);
-
-        if (score > bestScore) {
-            bestScore = score;
-            bestMove = m;
+    // Iterative Deepening loop: depth 1 upward
+    for (std::uint32_t currentDepth = 1; currentDepth <= maxDepth; ++currentDepth) {
+        if (context.stopToken && context.stopToken->isStopped()) {
+            lastCompletedResult.interrupted = true;
+            break;
         }
-        if (score > alpha) {
-            alpha = score;
+
+        // Root move ordering: PV move from previous iteration is ordered first
+        orderMoves(position, legalMoves, pvMove);
+
+        std::int32_t alpha = -kInfinity;
+        const std::int32_t beta = kInfinity;
+        std::int32_t iterationBestScore = -kInfinity;
+        std::optional<Move> iterationBestMove = legalMoves[0];
+
+        for (std::size_t i = 0; i < legalMoves.size(); ++i) {
+            const Move m = legalMoves[i];
+            UndoState undo;
+            (void)position.makeMove(m, undo);
+            const std::int32_t score = -alphaBetaInternal(
+                position, -beta, -alpha, currentDepth - 1, 1, lastCompletedResult.stats, evaluator, &context);
+            position.unmakeMove(m, undo);
+
+            if (context.aborted) {
+                break;
+            }
+
+            if (score > iterationBestScore) {
+                iterationBestScore = score;
+                iterationBestMove = m;
+            }
+            if (score > alpha) {
+                alpha = score;
+            }
+        }
+
+        if (context.aborted) {
+            lastCompletedResult.interrupted = true;
+            break;  // Discard partial/incomplete iteration!
+        }
+
+        // Iteration fully completed: update lastCompletedResult
+        lastCompletedResult.bestMove = iterationBestMove;
+        lastCompletedResult.score = iterationBestScore;
+        lastCompletedResult.completedDepth = currentDepth;
+        pvMove = iterationBestMove;
+
+        // If optimal thinking time reached, do not start next iteration
+        if (optimalTimeMs.has_value()) {
+            const auto elapsedMs = static_cast<std::uint32_t>(
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::steady_clock::now() - context.startTime).count());
+            if (elapsedMs >= *optimalTimeMs) {
+                break;
+            }
+        }
+
+        // Stop if a checkmate was found
+        if (isMateScore(iterationBestScore)) {
+            break;
         }
     }
 
-    result.bestMove = bestMove;
-    result.score = bestScore;
-    return result;
+    return lastCompletedResult;
 }
 
 }  // namespace search

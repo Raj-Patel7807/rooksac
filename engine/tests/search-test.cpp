@@ -79,7 +79,7 @@ void testTerminalScoresAndDraws() {
     require(staleOpt.hasValue(), "Stalemate FEN parses");
     auto stalePos = *staleOpt;
 
-    search::SearchLimits limits{.depth = 2};
+    search::SearchLimits limits(2);
     auto staleRes = search::search(stalePos, limits);
     require(!staleRes.bestMove.has_value(), "Stalemate returns nullopt move");
     require(staleRes.score == search::kDrawScore, "Stalemate returns 0 score");
@@ -107,7 +107,7 @@ void testMateInOneFixtures() {
     require(posOpt.hasValue(), "Mate in 1 FEN parses");
     auto pos = *posOpt;
 
-    search::SearchLimits limits{.depth = 1};
+    search::SearchLimits limits(1);
     auto res = search::search(pos, limits);
     require(res.bestMove.has_value(), "Search finds mate in one move");
     require(res.bestMove->from() == Square::D1 && res.bestMove->to() == Square::D8,
@@ -125,7 +125,7 @@ void testColourSymmetry() {
     require(blackOpt.hasValue(), "Black mate in 1 FEN parses");
     auto blackPos = *blackOpt;
 
-    search::SearchLimits limits{.depth = 1};
+    search::SearchLimits limits(1);
     auto whiteRes = search::search(whitePos, limits);
     auto blackRes = search::search(blackPos, limits);
 
@@ -144,29 +144,36 @@ void testGreedyWeaknessAvoidanceAtDepthTwo() {
     require(posOpt.hasValue(), "Defended pawn trap FEN parses");
     auto pos = *posOpt;
 
-    search::SearchLimits limitsDepth1{.depth = 1};
-    auto res1 = search::search(pos, limitsDepth1);
-    require(res1.bestMove.has_value(), "Depth 1 finds a move");
-    require(res1.bestMove->from() == Square::D1 && res1.bestMove->to() == Square::D5,
-            "Depth 1 greedily takes defended pawn");
+    // Without quiescence (unpruned plain minimax at depth 1), White falls into the horizon trap
+    search::SearchLimits limitsDepth1(1);
+    auto resMinimax1 = search::searchMinimax(pos, limitsDepth1);
+    require(resMinimax1.bestMove.has_value(), "Depth 1 minimax finds a move");
+    require(resMinimax1.bestMove->from() == Square::D1 && resMinimax1.bestMove->to() == Square::D5,
+            "Depth 1 unpruned minimax without quiescence greedily takes defended pawn");
 
-    search::SearchLimits limitsDepth2{.depth = 2};
+    // With quiescence search (even at depth 1), the tactical recapture cxd5 is seen, avoiding the queen loss!
+    auto resQ1 = search::search(pos, limitsDepth1);
+    require(resQ1.bestMove.has_value(), "Depth 1 search finds a move");
+    const bool q1TookDefendedPawn = (resQ1.bestMove->from() == Square::D1 && resQ1.bestMove->to() == Square::D5);
+    require(!q1TookDefendedPawn, "Depth 1 with Quiescence search avoids hanging the Queen on d5");
+
+    search::SearchLimits limitsDepth2(2);
     auto res2 = search::search(pos, limitsDepth2);
     require(res2.bestMove.has_value(), "Depth 2 finds a move");
     const bool tookDefendedPawn = (res2.bestMove->from() == Square::D1 && res2.bestMove->to() == Square::D5);
-    require(!tookDefendedPawn, "Depth 2 Negamax lookahead avoids hanging the Queen on d5");
+    require(!tookDefendedPawn, "Depth 2 lookahead avoids hanging the Queen on d5");
 }
 
 void testStatePreservationInvariant() {
     auto pos = Position::startPosition();
     const std::string originalFen = pos.toFen();
 
-    search::SearchLimits limits{.depth = 2};
+    search::SearchLimits limits(2);
     auto res = search::search(pos, limits);
 
     require(res.bestMove.has_value(), "Start position returns legal move");
     require(res.stats.nodes > 20, "Depth 2 searched multiple nodes");
-    require(res.stats.maxDepth == 2, "Max depth reached 2 plies");
+    require(res.stats.maxDepth >= 2, "Max depth reached at least 2 plies");
     require(pos.toFen() == originalFen, "Position FEN is strictly preserved after search");
 }
 
@@ -229,17 +236,14 @@ void testMoveOrderingPriorities() {
 }
 
 void testDifferentialMinimaxVsAlphaBeta() {
-    // Verify that Alpha-Beta produces mathematically identical scores to plain unpruned Minimax
-    // across diverse positions and depths (1, 2, 3).
-    const char* fens[] = {
+    // Verify that Alpha-Beta search produces mathematically identical scores to plain unpruned Minimax
+    // on quiet positions where no tactical horizon distortion occurs.
+    const char* quietFens[] = {
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-        "4k3/8/8/4q3/4Q3/8/8/4K3 w - - 0 1",
-        "4k3/8/2p5/3p4/8/8/8/3QK3 w - - 0 1",
-        "7k/5ppp/8/8/8/8/8/3QK3 w - - 0 1",
-        "3qk3/8/8/8/8/8/5PPP/7K b - - 0 1"
+        "4k3/8/8/8/8/8/8/4K3 w - - 0 1"
     };
 
-    for (const char* fen : fens) {
+    for (const char* fen : quietFens) {
         auto posOpt = Position::fromFen(fen);
         require(posOpt.hasValue(), "FEN parses");
         auto pos = *posOpt;
@@ -247,23 +251,19 @@ void testDifferentialMinimaxVsAlphaBeta() {
         MoveList legalMoves;
         movegen::generateLegalMoves(pos, legalMoves);
 
-        for (std::uint32_t depth = 1; depth <= 3; ++depth) {
-            search::SearchLimits limits{.depth = depth};
+        for (std::uint32_t depth = 1; depth <= 2; ++depth) {
+            search::SearchLimits limits(depth);
 
             auto minimaxRes = search::searchMinimax(pos, limits);
             auto alphaBetaRes = search::search(pos, limits);
 
             require(minimaxRes.score == alphaBetaRes.score,
-                    "Alpha-Beta score strictly matches Minimax score at all depths");
+                    "Alpha-Beta score strictly matches Minimax score on quiet positions");
 
             if (alphaBetaRes.bestMove.has_value()) {
                 require(legalMoves.contains(*alphaBetaRes.bestMove),
                         "Alpha-Beta best move is strictly legal");
             }
-
-            // Alpha-Beta must visit no more nodes than plain Minimax
-            require(alphaBetaRes.stats.nodes <= minimaxRes.stats.nodes,
-                    "Alpha-Beta visits <= nodes than unpruned Minimax");
         }
     }
 }
@@ -275,11 +275,11 @@ void testAlphaBetaCutoffsAndNodeReduction() {
     require(posOpt.hasValue(), "Tactical FEN parses");
     auto pos = *posOpt;
 
-    search::SearchLimits limits{.depth = 3};
+    search::SearchLimits limits(3);
     auto minimaxRes = search::searchMinimax(pos, limits);
     auto alphaBetaRes = search::search(pos, limits);
 
-    require(minimaxRes.score == alphaBetaRes.score, "Scores match at depth 3");
+    require(alphaBetaRes.bestMove.has_value(), "Alpha-Beta search finds a move");
     require(alphaBetaRes.stats.nodes < minimaxRes.stats.nodes,
             "Alpha-Beta visits strictly fewer nodes than plain Minimax");
     require(alphaBetaRes.stats.cutoffs > 0, "Alpha-Beta achieved beta cutoffs");
@@ -295,7 +295,7 @@ void testAlphaBetaFailLowFailHighExact() {
     auto pos = *posOpt;
 
     // First obtain exact root score via infinite window [-infinity, +infinity]
-    search::SearchLimits limits{.depth = 2};
+    search::SearchLimits limits(2);
     auto exactRes = search::search(pos, limits);
     const std::int32_t trueScore = exactRes.score;
 
@@ -334,7 +334,7 @@ void testCheckEvasionsAndPromotions() {
     movegen::generateLegalMoves(checkPos, checkMoves);
     require(!checkMoves.empty(), "King has evasions");
 
-    search::SearchLimits limits{.depth = 2};
+    search::SearchLimits limits(2);
     auto checkRes = search::search(checkPos, limits);
     require(checkRes.bestMove.has_value(), "Search finds check evasion");
     require(checkMoves.contains(*checkRes.bestMove), "Evasion move is strictly legal");
@@ -365,8 +365,8 @@ void testReferenceMinimaxEquivalence() {
         auto pos = *posOpt;
 
         for (std::uint32_t depth = 1; depth <= 2; ++depth) {
-            search::SearchLimits limits{.depth = depth};
-            auto searchRes = search::search(pos, limits);
+            search::SearchLimits limits(depth);
+            auto searchRes = search::searchMinimax(pos, limits);
 
             const bool isWhite = (pos.sideToMove() == Color::White);
             const std::int32_t refScore = referenceMinimax(pos, depth, 0, isWhite);
@@ -392,6 +392,174 @@ void testNegamaxAgentWrapper() {
     require(legalMoves.contains(*move), "Selected move is strictly legal");
 }
 
+void testQuiescenceTacticalHorizon() {
+    // Tactical horizon fixture:
+    // White queen on d1, Black pawn on d5 defended by pawn on c6:
+    // FEN: 4k3/8/2p5/3p4/8/8/8/3QK3 w - - 0 1
+    // If White plays 1. Qxd5, White is statically up a pawn (+100).
+    // In Quiescence search, Black immediately plays 1... cxd5, capturing the Queen.
+    // The resulting quiescence score is -800 (net queen loss), exposing the horizon blunder!
+    auto posOpt = Position::fromFen("4k3/8/2p5/3p4/8/8/8/3QK3 w - - 0 1");
+    require(posOpt.hasValue(), "Defended pawn FEN parses");
+    auto pos = *posOpt;
+
+    // Simulate position after White plays 1. Qxd5:
+    auto qxd5 = Move::create(Square::D1, Square::D5);
+    require(qxd5.has_value(), "Qxd5 created");
+
+    UndoState undo;
+    (void)pos.makeMove(*qxd5, undo);
+
+    // Black is to move. Black has legal capture cxd5:
+    search::SearchStats qstats;
+    const std::int32_t qscore = search::quiescence(
+        pos, -search::kInfinity, search::kInfinity, 1, qstats,
+        [](const Position& p) { return eval::evaluateMaterialSideToMove(p); });
+
+    pos.unmakeMove(*qxd5, undo);
+
+    // From Black's perspective after 1. Qxd5, stand-pat is -800 (down a queen).
+    // By capturing the queen (1... cxd5), Black ends up up a pawn (+100).
+    require(qscore == 100, "Quiescence search correctly captures the hung queen on d5, scoring +100");
+}
+
+void testQuiescenceCheckHandling() {
+    // Check in quiescence: King on e1 is in check by Black rook on e2.
+    // FEN: 8/8/8/8/8/8/4r3/4K2k w - - 0 1
+    // Statically White is down a rook (-500). Stand-pat would be -500.
+    // Because White is in check, stand-pat is prohibited and White searches evasions,
+    // finding Kxe2 which captures the checking rook and brings score to 0!
+    auto checkOpt = Position::fromFen("8/8/8/8/8/8/4r3/4K2k w - - 0 1");
+    require(checkOpt.hasValue(), "Check FEN parses");
+    auto checkPos = *checkOpt;
+
+    search::SearchStats qstats;
+    const std::int32_t qscore = search::quiescence(
+        checkPos, -search::kInfinity, search::kInfinity, 0, qstats,
+        [](const Position& p) { return eval::evaluateMaterialSideToMove(p); });
+
+    require(qscore == 0, "King captures checking rook in quiescence to restore material to 0");
+
+    // Checkmate in quiescence: White king checkmated on h8
+    // FEN: 7k/7Q/6K1/8/8/8/8/8 b - - 0 1
+    auto mateOpt = Position::fromFen("7k/7Q/6K1/8/8/8/8/8 b - - 0 1");
+    require(mateOpt.hasValue(), "Mate FEN parses");
+    auto matePos = *mateOpt;
+
+    search::SearchStats mateStats;
+    const std::int32_t mateScore = search::quiescence(
+        matePos, -search::kInfinity, search::kInfinity, 0, mateStats,
+        [](const Position& p) { return eval::evaluateMaterialSideToMove(p); });
+
+    require(mateScore == -search::kMateScore, "Checkmate in quiescence returns -kMateScore");
+}
+
+void testIterativeDeepeningAndFallbackMove() {
+    auto pos = Position::startPosition();
+    MoveList legalMoves;
+    movegen::generateLegalMoves(pos, legalMoves);
+
+    // Iterative deepening to depth 3
+    search::SearchLimits limits(3);
+    auto res = search::search(pos, limits);
+
+    require(res.completedDepth == 3, "Iterative deepening reached requested depth 3");
+    require(res.bestMove.has_value(), "Returns a best move");
+    require(legalMoves.contains(*res.bestMove), "Returned move is strictly legal");
+    require(!res.interrupted, "Search was not interrupted");
+}
+
+void testCooperativeStopToken() {
+    auto pos = Position::startPosition();
+    MoveList legalMoves;
+    movegen::generateLegalMoves(pos, legalMoves);
+
+    search::SearchStopToken stopToken;
+    stopToken.stop();  // Pre-stop the token
+
+    search::SearchLimits limits(10);
+    auto res = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateMaterialSideToMove(p);
+    }, &stopToken);
+
+    require(res.interrupted, "Search flagged as interrupted");
+    require(res.completedDepth == 0, "No iterations completed under immediate stop");
+    require(res.bestMove.has_value(), "Fallback move is guaranteed");
+    require(legalMoves.contains(*res.bestMove), "Fallback move is strictly legal");
+}
+
+void testTimeManagerAllocation() {
+    // 1. Explicit move time
+    TimeControl tcMoveTime;
+    tcMoveTime.moveTimeMs = 500;
+    TimeAllocation alloc1 = TimeManager::allocate(tcMoveTime);
+    require(alloc1.optimalTimeMs == 500 && alloc1.maximumTimeMs == 500, "Fixed move time allocated");
+
+    // 2. Clock with remaining time and increment
+    TimeControl tcClock;
+    tcClock.remainingTimeMs = 60'000;
+    tcClock.incrementMs = 1'000;
+    tcClock.movesToGo = 30;
+
+    TimeAllocation alloc2 = TimeManager::allocate(tcClock);
+    require(alloc2.optimalTimeMs > 0, "Optimal time is positive");
+    require(alloc2.maximumTimeMs >= alloc2.optimalTimeMs, "Maximum time >= optimal time");
+    require(alloc2.maximumTimeMs <= 60'000, "Maximum time does not exceed remaining clock");
+
+    // 3. Tiny clock values (emergency time)
+    TimeControl tcTiny;
+    tcTiny.remainingTimeMs = 10;
+    tcTiny.incrementMs = 1;
+
+    TimeAllocation alloc3 = TimeManager::allocate(tcTiny);
+    require(alloc3.optimalTimeMs >= 1, "Tiny clock optimal time >= 1ms");
+    require(alloc3.maximumTimeMs <= 10, "Tiny clock maximum time <= 10ms");
+
+    // 4. Extreme 1ms clock
+    TimeControl tcExtreme;
+    tcExtreme.remainingTimeMs = 1;
+
+    TimeAllocation alloc4 = TimeManager::allocate(tcExtreme);
+    require(alloc4.optimalTimeMs >= 1, "Extreme clock optimal time >= 1ms");
+}
+
+void testSearchLimitsControls() {
+    auto pos = Position::startPosition();
+    MoveList legalMoves;
+    movegen::generateLegalMoves(pos, legalMoves);
+
+    // 1. Fixed maxNodes limit
+    search::SearchLimits nodeLimits;
+    nodeLimits.depth = 64;
+    nodeLimits.maxNodes = 200;
+
+    auto nodeRes = search::search(pos, nodeLimits);
+    require(nodeRes.bestMove.has_value(), "Node-limited search returns a move");
+    require(legalMoves.contains(*nodeRes.bestMove), "Node-limited move is legal");
+
+    // 2. Fixed moveTimeMs limit
+    search::SearchLimits timeLimits;
+    timeLimits.depth = 64;
+    timeLimits.moveTimeMs = 25;
+
+    auto timeRes = search::search(pos, timeLimits);
+    require(timeRes.bestMove.has_value(), "Time-limited search returns a move");
+    require(legalMoves.contains(*timeRes.bestMove), "Time-limited move is legal");
+}
+
+void testIterativeDeepeningDeterminism() {
+    auto pos = Position::startPosition();
+    search::SearchLimits limits(3);
+
+    auto res1 = search::search(pos, limits);
+    auto res2 = search::search(pos, limits);
+
+    require(res1.bestMove.has_value() && res2.bestMove.has_value(), "Both return best moves");
+    require(res1.bestMove->encoded() == res2.bestMove->encoded(), "Best moves match deterministically");
+    require(res1.score == res2.score, "Scores match deterministically");
+    require(res1.completedDepth == res2.completedDepth, "Completed depths match");
+}
+
 }  // namespace
 
 int main() {
@@ -407,7 +575,14 @@ int main() {
     testCheckEvasionsAndPromotions();
     testReferenceMinimaxEquivalence();
     testNegamaxAgentWrapper();
+    testQuiescenceTacticalHorizon();
+    testQuiescenceCheckHandling();
+    testIterativeDeepeningAndFallbackMove();
+    testCooperativeStopToken();
+    testTimeManagerAllocation();
+    testSearchLimitsControls();
+    testIterativeDeepeningDeterminism();
 
-    std::cout << "All Alpha-Beta pruning, move ordering, and search tests passed successfully.\n";
+    std::cout << "All Iterative Deepening, Quiescence, Time Control, and Search tests passed successfully.\n";
     return EXIT_SUCCESS;
 }
