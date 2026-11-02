@@ -25,6 +25,7 @@ This page is the authoritative status summary. It describes repository facts, no
 - Supervised policy-value neural network pipeline: offline PyTorch residual CNN architecture (`PolicyValueNet`) with 18-plane feature encoding, 4096-action move vocabulary, joint policy-value loss training pipeline, whole-game zero-leakage dataset validation, and model checkpointing (`research/nn/`).
 - Native neural evaluation and policy move ranking: self-contained native C++ neural inference module (`NeuralEvaluator`), 18-plane feature tensor extraction (`encodePosition`), value calibration mapping $v \in [-1, 1]$ to engine centipawns with side-to-move perspective, legal-only policy move ordering (`orderMovesByPolicy`), and selectable evaluation modes (`rooksac::neural::EvalMode`).
 - NNUE incremental accumulator evaluation research track: sparse 832-feature piece-square schema, int16 hidden accumulator with incremental update rules (`updateAccumulator`), exact make/unmake parity certification, and perspective symmetry verification (`rooksac::nnue::NnueEvaluator`).
+- Scalable FastAPI backend and bounded engine orchestration: modular backend architecture (`app/backend/`), bounded worker pool (`BoundedEnginePool`) using `asyncio.Semaphore` with process isolation and timeout enforcement, versioned REST APIs (`/api/v1/health`, `/api/v1/analysis`, `/api/v1/pgn/import`), and safe stdio UCI communication.
 
 ## In progress
 
@@ -32,8 +33,8 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Planned
 
-- Vectorized SIMD acceleration (AVX2/NEON) for accumulator updates if scaled.
-- Perft and benchmark tools, offline research tooling, and repository tools.
+- Frontend client application and real-time WebSocket analysis streaming.
+- Deployment, containerization, and release engineering.
 - A separate application layer under `app/` that communicates with the engine through UCI/process boundaries.
 - CI, packaging, deployment, and release processes.
 
