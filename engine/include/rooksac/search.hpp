@@ -122,7 +122,7 @@ using LeafEvaluator = std::function<std::int32_t(const Position&)>;
     Position& position,
     const SearchLimits& limits,
     const LeafEvaluator& evaluator = [](const Position& pos) {
-        return eval::evaluateMaterialSideToMove(pos);
+        return eval::evaluateSideToMove(pos);
     });
 
 /// \brief Progressive Iterative Deepening search controller with time management, stop token, and optional transposition table.
