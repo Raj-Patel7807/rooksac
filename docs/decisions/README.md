@@ -17,6 +17,7 @@ This file is the initial ADR register. Status distinguishes an adopted working d
 - [ADR-017 — UCI protocol and standalone engine executable](adr-017-uci-protocol-and-standalone-engine-executable.md)
 - [ADR-018 — Zobrist hashing and memory-bounded transposition table](adr-018-zobrist-hashing-and-transposition-table.md)
 - [ADR-019 — Classical tapered evaluation](adr-019-classical-tapered-evaluation.md)
+- [ADR-020 — Advanced classical search enhancements and benchmark suite](adr-020-advanced-search-and-benchmark.md)
 
 ## ADR-001 — C++20 for the engine
 
