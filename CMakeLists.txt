@@ -67,6 +67,7 @@ add_library(rooksac_core
     engine/src/material.cpp
     engine/src/move_order.cpp
     engine/src/movegen.cpp
+    engine/src/neural_evaluator.cpp
     engine/src/perft.cpp
     engine/src/position.cpp
     engine/src/search.cpp
@@ -159,6 +160,12 @@ rooksac_configure_warnings(rooksac_tuning_test)
 rooksac_configure_sanitizers(rooksac_tuning_test)
 rooksac_configure_clang_tidy(rooksac_tuning_test)
 
+add_executable(rooksac_neural_eval_test engine/tests/neural-eval-test.cpp)
+target_link_libraries(rooksac_neural_eval_test PRIVATE rooksac_core)
+rooksac_configure_warnings(rooksac_neural_eval_test)
+rooksac_configure_sanitizers(rooksac_neural_eval_test)
+rooksac_configure_clang_tidy(rooksac_neural_eval_test)
+
 if(BUILD_TESTING)
     add_test(NAME rooksac.build-smoke COMMAND rooksac_build_smoke_test)
     add_test(NAME rooksac.core-types COMMAND rooksac_core_types_test)
@@ -171,6 +178,7 @@ if(BUILD_TESTING)
     add_test(NAME rooksac.zobrist_tt COMMAND rooksac_zobrist_tt_test)
     add_test(NAME rooksac.eval COMMAND rooksac_eval_test)
     add_test(NAME rooksac.tuning COMMAND rooksac_tuning_test)
+    add_test(NAME rooksac.neural_eval COMMAND rooksac_neural_eval_test)
 endif()
 
 add_custom_target(
