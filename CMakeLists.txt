@@ -65,7 +65,8 @@ add_library(rooksac_core
     engine/src/material.cpp
     engine/src/movegen.cpp
     engine/src/perft.cpp
-    engine/src/position.cpp)
+    engine/src/position.cpp
+    engine/src/search.cpp)
 target_compile_features(rooksac_core PUBLIC cxx_std_20)
 target_include_directories(rooksac_core PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/engine/include>)
 rooksac_configure_warnings(rooksac_core)
@@ -102,6 +103,12 @@ rooksac_configure_warnings(rooksac_agent_test)
 rooksac_configure_sanitizers(rooksac_agent_test)
 rooksac_configure_clang_tidy(rooksac_agent_test)
 
+add_executable(rooksac_search_test engine/tests/search-test.cpp)
+target_link_libraries(rooksac_search_test PRIVATE rooksac_core)
+rooksac_configure_warnings(rooksac_search_test)
+rooksac_configure_sanitizers(rooksac_search_test)
+rooksac_configure_clang_tidy(rooksac_search_test)
+
 add_executable(rooksac_match_harness engine/src/match_harness.cpp)
 target_link_libraries(rooksac_match_harness PRIVATE rooksac_core)
 rooksac_configure_warnings(rooksac_match_harness)
@@ -115,6 +122,7 @@ if(BUILD_TESTING)
     add_test(NAME rooksac.movegen COMMAND rooksac_movegen_test)
     add_test(NAME rooksac.perft COMMAND rooksac_perft_test)
     add_test(NAME rooksac.agent COMMAND rooksac_agent_test)
+    add_test(NAME rooksac.search COMMAND rooksac_search_test)
 endif()
 
 add_custom_target(
