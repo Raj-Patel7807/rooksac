@@ -19,6 +19,7 @@ This page is the authoritative status summary. It describes repository facts, no
 - Iterative deepening, quiescence, and time management: progressive deepening from depth 1 upward with PV-first move ordering, tactical quiescence search with check evasions and stand-pat rules, dedicated `TimeManager` with safety reserve and emergency clock handling, cooperative `SearchStopToken`, and guaranteed legal fallback moves.
 - UCI protocol and standalone executable: Universal Chess Interface protocol implementation (`rooksac::uci::EngineSession`) supporting `uci`, `isready`, `ucinewgame`, `position`, `go` (depth, movetime, wtime/btime/winc/binc, nodes, infinite), `stop`, and `quit`; strict stdout stream discipline, stderr diagnostic routing, and standalone `rooksac` executable.
 - Zobrist hashing and transposition table: deterministic 64-bit Zobrist keys updated incrementally on make/unmake and verified with full recalculation; memory-bounded `TranspositionTable` with 16-byte packed entries, depth-preferred replacement with generational aging, mate score ply normalization, and configurable UCI `Hash` option.
+- Classical tapered evaluation: tapered `(mg, eg)` score evaluation blended by non-pawn material game phase (24 total), colour-mirrored Piece-Square Tables (PSTs), pawn structure terms (isolated, doubled, passed), king safety penalties (missing shield pawns, semi-open files), piece activity (bishop pair, open rooks), safe mobility, and centralized `EvalParameters`.
 
 ## In progress
 
@@ -26,7 +27,7 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Planned
 
-- Position evaluation, piece-square tables, and mobility terms (Sprint 14).
+- Search enhancements (Null-move pruning, Late Move Reductions - LMR, Futility pruning).
 - Perft and benchmark tools, offline research tooling, and repository tools.
 - A separate application layer under `app/` that communicates with the engine through UCI/process boundaries.
 - CI, packaging, deployment, and release processes.
@@ -38,4 +39,4 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Current limitations
 
-There is no complex positional evaluation (PSTs/mobility terms). `rooksac_core` provides core types, bitboard operations, position state, FEN parsing, make/unmake move transitions, piece attacks, pseudo-legal and legal move generation, game evaluation, perft testing, material evaluation, baseline agents (random and greedy), fail-soft Alpha-Beta search with staged move ordering, iterative deepening, quiescence search, time management, deterministic Zobrist hashing, memory-bounded transposition tables, UCI protocol handling, standalone executable `rooksac`, and match runner `rooksac_match_harness`.
+The engine uses classical tapered evaluation; neural network evaluation (NNUE) is not yet implemented. `rooksac_core` provides core types, bitboard operations, position state, FEN parsing, make/unmake move transitions, piece attacks, pseudo-legal and legal move generation, game evaluation, perft testing, material evaluation, classical tapered evaluation, baseline agents (random and greedy), fail-soft Alpha-Beta search with staged move ordering, iterative deepening, quiescence search, time management, deterministic Zobrist hashing, memory-bounded transposition tables, UCI protocol handling, standalone executable `rooksac`, and match runner `rooksac_match_harness`.
