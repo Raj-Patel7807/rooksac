@@ -195,3 +195,4 @@ int main() {
     std::cout << "All UCI protocol and engine session tests passed successfully.\n";
     return 0;
 }
+

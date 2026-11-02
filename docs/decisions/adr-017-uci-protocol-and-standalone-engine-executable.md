@@ -30,3 +30,4 @@ To make RookSac universally interoperable with chess graphical interfaces (e.g. 
 ## Consequences
 
 RookSac now operates as a fully functional standalone UCI chess engine compatible with Cute Chess and other UCI interfaces.
+
