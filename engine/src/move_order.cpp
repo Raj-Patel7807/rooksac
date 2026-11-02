@@ -19,7 +19,15 @@ struct ScoredMove {
 
 }  // namespace
 
-std::int32_t scoreMove(const Position& position, Move move) noexcept {
+std::int32_t scoreMove(
+    const Position& position,
+    Move move,
+    std::optional<Move> pvMove) noexcept {
+    // 1. PV move from previous iteration receives absolute highest priority
+    if (pvMove.has_value() && move.encoded() == pvMove->encoded()) {
+        return kPvMoveBaseScore;
+    }
+
     const Square fromSq = move.from();
     const Square toSq = move.to();
     const Piece movedPiece = position.pieceAt(fromSq);
@@ -59,7 +67,10 @@ std::int32_t scoreMove(const Position& position, Move move) noexcept {
     return kQuietBaseScore;
 }
 
-void orderMoves(const Position& position, MoveList& moves) noexcept {
+void orderMoves(
+    const Position& position,
+    MoveList& moves,
+    std::optional<Move> pvMove) noexcept {
     const std::size_t count = moves.size();
     if (count <= 1) {
         return;
@@ -68,7 +79,7 @@ void orderMoves(const Position& position, MoveList& moves) noexcept {
     std::array<ScoredMove, MoveList::kMaxCapacity> scoredMoves{};
     for (std::size_t i = 0; i < count; ++i) {
         scoredMoves[i].move = moves[i];
-        scoredMoves[i].score = scoreMove(position, moves[i]);
+        scoredMoves[i].score = scoreMove(position, moves[i], pvMove);
     }
 
     // Stable sort ensures moves with the same score maintain their deterministic generation order.
