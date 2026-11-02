@@ -12,6 +12,8 @@ namespace search {
 
 namespace {
 
+// ─── Internal search context ─────────────────────────────────────────────────
+
 struct SearchContext {
     SearchStopToken* stopToken = nullptr;
     tt::TranspositionTable* ttable = nullptr;
@@ -19,6 +21,13 @@ struct SearchContext {
     std::optional<std::uint64_t> maxNodes;
     std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
     bool aborted = false;
+
+    // Killer move table, allocated per search invocation on the stack inside `search()`.
+    // Pointer may be null if killer heuristic is disabled.
+    KillerTable* killers = nullptr;
+
+    // Active search options for this invocation.
+    SearchOptions options;
 
     [[nodiscard]] bool checkStop(std::uint64_t currentNodes) noexcept {
         if (aborted) {
@@ -41,6 +50,8 @@ struct SearchContext {
         return false;
     }
 };
+
+// ─── Quiescence search (unchanged interface, context-aware) ─────────────────
 
 std::int32_t quiescenceInternal(
     Position& position,
@@ -157,6 +168,8 @@ std::int32_t quiescenceInternal(
     return bestScore;
 }
 
+// ─── Enhanced Alpha-Beta (PVS, NMP, LMR, killers) ───────────────────────────
+
 std::int32_t alphaBetaInternal(
     Position& position,
     std::int32_t alpha,
@@ -223,20 +236,105 @@ std::int32_t alphaBetaInternal(
         return quiescenceInternal(position, alpha, beta, ply, stats, evaluator, context);
     }
 
-    // 5. Staged move ordering (with TT best move prioritized)
-    orderMoves(position, legalMoves, ttMove);
+    const bool inCheck = movegen::isInCheck(position);
+    const bool isPvNode = (beta - alpha > 1);  // True when window is wider than null-window
 
-    // 6. Fail-soft Alpha-Beta recursion
+    // ── Null-move pruning ─────────────────────────────────────────────────
+    // Conditions: not in check, not a PV node, sufficient depth, sufficient material.
+    // The zugzwang safeguard: require at least one non-pawn piece so that passing a turn
+    // is not catastrophically incorrect (e.g., king+pawns endgames are risky).
+    if (context && context->options.nullMovePruning && !inCheck && !isPvNode && depth >= 2) {
+        const std::uint32_t nmpR = context->options.nullMoveReduction;
+        const std::int32_t minPieces = context->options.nullMoveMinPieces;
+
+        // Count non-pawn/king pieces for the side to move
+        const Color stm = position.sideToMove();
+        const Bitboard ownKnights = position.pieces(stm, PieceType::Knight);
+        const Bitboard ownBishops = position.pieces(stm, PieceType::Bishop);
+        const Bitboard ownRooks = position.pieces(stm, PieceType::Rook);
+        const Bitboard ownQueens = position.pieces(stm, PieceType::Queen);
+        const std::int32_t nonPawnCount = static_cast<std::int32_t>(
+            rooksac::popCount(ownKnights) + rooksac::popCount(ownBishops) +
+            rooksac::popCount(ownRooks) + rooksac::popCount(ownQueens));
+
+        if (nonPawnCount >= minPieces && depth >= nmpR + 1) {
+            // Make null move (pass the turn without moving a piece)
+            UndoState undo;
+            position.makeNullMove(undo);
+
+            const std::uint32_t reducedDepth = depth - 1 - nmpR;
+            const std::int32_t nullScore = -alphaBetaInternal(
+                position, -beta, -(beta - 1), reducedDepth, ply + 1, stats, evaluator, context);
+
+            position.unmakeNullMove(undo);
+
+            if (context && context->aborted) {
+                return alpha;
+            }
+
+            if (nullScore >= beta) {
+                ++stats.cutoffs;
+                // Avoid returning mate scores that are unreliable from null-move search
+                return (nullScore >= kMateScore - kMaxMatePly) ? beta : nullScore;
+            }
+        }
+    }
+
+    // 5. Staged move ordering (with TT best move and killers prioritized)
+    KillerTable* killers = (context && context->options.killerMoves) ? context->killers : nullptr;
+    orderMoves(position, legalMoves, ttMove, killers, ply);
+
+    // 6. Fail-soft Alpha-Beta with PVS and LMR
     const std::int32_t originalAlpha = alpha;
     std::int32_t bestScore = -kInfinity;
     std::optional<Move> bestMove = std::nullopt;
+    const bool usePvs = context && context->options.pvSearch;
+    const bool useLmr = context && context->options.lmr;
 
     for (std::size_t i = 0; i < legalMoves.size(); ++i) {
         const Move m = legalMoves[i];
         UndoState undo;
         (void)position.makeMove(m, undo);
-        const std::int32_t score = -alphaBetaInternal(
-            position, -beta, -alpha, depth - 1, ply + 1, stats, evaluator, context);
+
+        const bool isCapture = (m.promotion() != PieceType::None) || [&]() {
+            // Check if the square was occupied before the move (which would mean it's a capture)
+            // Since we've already made the move, check the undo state's captured piece
+            return undo.capturedPiece != Piece::None;
+        }();
+
+        std::int32_t score = 0;
+
+        if (i == 0 || !usePvs) {
+            // First move (or PVS disabled): search with full window
+            score = -alphaBetaInternal(
+                position, -beta, -alpha, depth - 1, ply + 1, stats, evaluator, context);
+        } else {
+            // LMR: late quiet moves at sufficient depth get a reduced-depth search first
+            bool doLmr = useLmr &&
+                         !isCapture &&
+                         !inCheck &&
+                         depth >= context->options.lmrMinDepth &&
+                         i >= context->options.lmrMoveThreshold;
+
+            std::uint32_t reduction = doLmr ? context->options.lmrReduction : 0U;
+            std::uint32_t searchDepth = (depth > 0) ? (depth - 1) : 0;
+            // Clamp reduction so we never search at negative depth
+            if (reduction > searchDepth) {
+                reduction = searchDepth;
+            }
+
+            // PVS: null-window search first
+            score = -alphaBetaInternal(
+                position, -(alpha + 1), -alpha, searchDepth - reduction, ply + 1, stats, evaluator, context);
+
+            // Re-search conditions: either fail-high beyond alpha, or LMR was active
+            if (score > alpha && (score < beta || reduction > 0)) {
+                // Full-depth, full-window re-search
+                score = -alphaBetaInternal(
+                    position, -beta, -alpha, depth - 1, ply + 1, stats, evaluator, context);
+            }
+        }
+
         position.unmakeMove(m, undo);
 
         if (context && context->aborted) {
@@ -252,6 +350,12 @@ std::int32_t alphaBetaInternal(
         }
         if (alpha >= beta) {
             ++stats.cutoffs;
+
+            // Killer move: record quiet moves that caused a beta cutoff
+            if (killers != nullptr && undo.capturedPiece == Piece::None && m.promotion() == PieceType::None) {
+                storeKillerMove(*killers, ply, m);
+            }
+
             break;  // Beta cutoff (fail-high)
         }
     }
@@ -271,6 +375,8 @@ std::int32_t alphaBetaInternal(
 }
 
 }  // namespace
+
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 std::int32_t quiescence(
     Position& position,
@@ -400,11 +506,19 @@ SearchResult search(
     const SearchLimits& limits,
     const LeafEvaluator& evaluator,
     SearchStopToken* stopToken,
-    tt::TranspositionTable* ttable) {
+    tt::TranspositionTable* ttable,
+    const SearchOptions& options) {
     SearchContext context;
     context.stopToken = stopToken;
     context.ttable = ttable;
     context.maxNodes = limits.maxNodes;
+    context.options = options;
+
+    // Killer table: zero-initialized (default Move is a null/invalid move)
+    KillerTable killerTable{};
+    if (options.killerMoves) {
+        context.killers = &killerTable;
+    }
 
     // Time allocation setup
     std::optional<std::uint32_t> optimalTimeMs;
@@ -462,31 +576,76 @@ SearchResult search(
         }
 
         // Root move ordering: PV move from previous iteration is ordered first
-        orderMoves(position, legalMoves, pvMove);
+        orderMoves(position, legalMoves, pvMove, context.killers, 0);
 
-        std::int32_t alpha = -kInfinity;
-        const std::int32_t beta = kInfinity;
+        // ── Aspiration windows ───────────────────────────────────────────────
+        // Use full window for depth 1 (no prior score to center on).
+        // From depth 2 onward, try a narrow window and widen on failure.
+        std::int32_t aspirationAlpha = -kInfinity;
+        std::int32_t aspirationBeta = kInfinity;
+
+        if (options.aspirationWindows && currentDepth >= 2) {
+            const std::int32_t prevScore = lastCompletedResult.score;
+            const std::int32_t delta = options.aspirationDelta;
+            aspirationAlpha = prevScore - delta;
+            aspirationBeta = prevScore + delta;
+        }
+
         std::int32_t iterationBestScore = -kInfinity;
         std::optional<Move> iterationBestMove = legalMoves[0];
 
-        for (std::size_t i = 0; i < legalMoves.size(); ++i) {
-            const Move m = legalMoves[i];
-            UndoState undo;
-            (void)position.makeMove(m, undo);
-            const std::int32_t score = -alphaBetaInternal(
-                position, -beta, -alpha, currentDepth - 1, 1, lastCompletedResult.stats, evaluator, &context);
-            position.unmakeMove(m, undo);
+        // Aspiration search loop: widen window until we succeed or use full window
+        bool aspirationDone = false;
+        while (!aspirationDone) {
+            std::int32_t alpha = aspirationAlpha;
+            const std::int32_t beta = aspirationBeta;
+            iterationBestScore = -kInfinity;
+            iterationBestMove = legalMoves[0];
+
+            for (std::size_t i = 0; i < legalMoves.size(); ++i) {
+                const Move m = legalMoves[i];
+                UndoState undo;
+                (void)position.makeMove(m, undo);
+                const std::int32_t score = -alphaBetaInternal(
+                    position, -beta, -alpha, currentDepth - 1, 1, lastCompletedResult.stats, evaluator, &context);
+                position.unmakeMove(m, undo);
+
+                if (context.aborted) {
+                    break;
+                }
+
+                if (score > iterationBestScore) {
+                    iterationBestScore = score;
+                    iterationBestMove = m;
+                }
+                if (score > alpha) {
+                    alpha = score;
+                }
+            }
 
             if (context.aborted) {
                 break;
             }
 
-            if (score > iterationBestScore) {
-                iterationBestScore = score;
-                iterationBestMove = m;
-            }
-            if (score > alpha) {
-                alpha = score;
+            // Aspiration window result analysis:
+            // - Fail-low (score <= aspirationAlpha): widen low side
+            // - Fail-high (score >= aspirationBeta): widen high side
+            // - Within window: done
+            if (options.aspirationWindows && currentDepth >= 2 &&
+                aspirationAlpha != -kInfinity && aspirationBeta != kInfinity) {
+                if (iterationBestScore <= aspirationAlpha) {
+                    // Fail-low: widen downward (fall back to full window)
+                    aspirationAlpha = -kInfinity;
+                    // Keep aspirationBeta the same (we only failed low)
+                } else if (iterationBestScore >= aspirationBeta) {
+                    // Fail-high: widen upward (fall back to full window)
+                    aspirationBeta = kInfinity;
+                    // Keep aspirationAlpha the same (we only failed high)
+                } else {
+                    aspirationDone = true;
+                }
+            } else {
+                aspirationDone = true;
             }
         }
 

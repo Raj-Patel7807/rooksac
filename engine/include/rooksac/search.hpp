@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <array>
 #include <chrono>
 #include <cstdint>
 #include <functional>
@@ -11,6 +12,7 @@
 #include "rooksac/move.hpp"
 #include "rooksac/move_list.hpp"
 #include "rooksac/position.hpp"
+#include "rooksac/search_options.hpp"
 #include "rooksac/time_management.hpp"
 #include "rooksac/transposition_table.hpp"
 
@@ -125,7 +127,12 @@ using LeafEvaluator = std::function<std::int32_t(const Position&)>;
         return eval::evaluateSideToMove(pos);
     });
 
-/// \brief Progressive Iterative Deepening search controller with time management, stop token, and optional transposition table.
+/// \brief Progressive Iterative Deepening search controller with time management, stop token,
+/// optional transposition table, and configurable search enhancements.
+///
+/// The \p options parameter controls which advanced techniques (aspiration windows, PVS,
+/// null-move pruning, LMR, killer heuristic) are active. Defaults to all enabled.
+/// Pass `SearchOptions::vanilla()` to obtain plain alpha-beta without enhancements.
 [[nodiscard]] SearchResult search(
     Position& position,
     const SearchLimits& limits,
@@ -133,7 +140,8 @@ using LeafEvaluator = std::function<std::int32_t(const Position&)>;
         return eval::evaluateSideToMove(pos);
     },
     SearchStopToken* stopToken = nullptr,
-    tt::TranspositionTable* ttable = nullptr);
+    tt::TranspositionTable* ttable = nullptr,
+    const SearchOptions& options = SearchOptions{});
 
 }  // namespace search
 }  // namespace rooksac
