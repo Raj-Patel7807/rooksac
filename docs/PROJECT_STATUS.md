@@ -21,6 +21,7 @@ This page is the authoritative status summary. It describes repository facts, no
 - Zobrist hashing and transposition table: deterministic 64-bit Zobrist keys updated incrementally on make/unmake and verified with full recalculation; memory-bounded `TranspositionTable` with 16-byte packed entries, depth-preferred replacement with generational aging, mate score ply normalization, and configurable UCI `Hash` option.
 - Classical tapered evaluation: tapered `(mg, eg)` score evaluation blended by non-pawn material game phase (24 total), colour-mirrored Piece-Square Tables (PSTs), pawn structure terms (isolated, doubled, passed), king safety penalties (missing shield pawns, semi-open files), piece activity (bishop pair, open rooks), safe mobility, and centralized `EvalParameters`.
 - Advanced classical search and benchmark suite: aspiration windows with fail-soft widening, Principal Variation Search (PVS), Late Move Reductions (LMR) with full-depth re-search, null-move pruning (NMP) with zugzwang safeguards, killer move heuristic (2 slots/ply), `SearchOptions` feature isolation, canonical 8-position fixed FEN benchmark suite, standalone `rooksac_bench` executable, and protocol-safe UCI `bench` command.
+- Texel evaluation tuning, self-play matches, and SPRT: versioned evaluation parameter JSON serialization/deserialization schema, Texel sigmoid probability mapping and Mean Squared Error objective calculation, whole-game position dataset extraction and splitting (`tools/pgn_extract.py`), and Sequential Probability Ratio Test (SPRT) statistical decision engine in C++ and Python (`tools/sprt_match.py`).
 
 ## In progress
 
@@ -28,7 +29,7 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Planned
 
-- Futility pruning and extended search heuristics.
+- Extended neural evaluation (NNUE) or deep architecture experiments.
 - Perft and benchmark tools, offline research tooling, and repository tools.
 - A separate application layer under `app/` that communicates with the engine through UCI/process boundaries.
 - CI, packaging, deployment, and release processes.
