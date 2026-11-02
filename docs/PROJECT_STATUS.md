@@ -22,6 +22,7 @@ This page is the authoritative status summary. It describes repository facts, no
 - Classical tapered evaluation: tapered `(mg, eg)` score evaluation blended by non-pawn material game phase (24 total), colour-mirrored Piece-Square Tables (PSTs), pawn structure terms (isolated, doubled, passed), king safety penalties (missing shield pawns, semi-open files), piece activity (bishop pair, open rooks), safe mobility, and centralized `EvalParameters`.
 - Advanced classical search and benchmark suite: aspiration windows with fail-soft widening, Principal Variation Search (PVS), Late Move Reductions (LMR) with full-depth re-search, null-move pruning (NMP) with zugzwang safeguards, killer move heuristic (2 slots/ply), `SearchOptions` feature isolation, canonical 8-position fixed FEN benchmark suite, standalone `rooksac_bench` executable, and protocol-safe UCI `bench` command.
 - Texel evaluation tuning, self-play matches, and SPRT: versioned evaluation parameter JSON serialization/deserialization schema, Texel sigmoid probability mapping and Mean Squared Error objective calculation, whole-game position dataset extraction and splitting (`tools/pgn_extract.py`), and Sequential Probability Ratio Test (SPRT) statistical decision engine in C++ and Python (`tools/sprt_match.py`).
+- Supervised policy-value neural network pipeline: offline PyTorch residual CNN architecture (`PolicyValueNet`) with 18-plane feature encoding, 4096-action move vocabulary, joint policy-value loss training pipeline, whole-game zero-leakage dataset validation, and model checkpointing (`research/nn/`).
 
 ## In progress
 
@@ -29,7 +30,7 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Planned
 
-- Extended neural evaluation (NNUE) or deep architecture experiments.
+- Native NNUE or hybrid search integration.
 - Perft and benchmark tools, offline research tooling, and repository tools.
 - A separate application layer under `app/` that communicates with the engine through UCI/process boundaries.
 - CI, packaging, deployment, and release processes.
