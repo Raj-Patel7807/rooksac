@@ -296,7 +296,9 @@ void testAlphaBetaFailLowFailHighExact() {
 
     // First obtain exact root score via infinite window [-infinity, +infinity]
     search::SearchLimits limits(2);
-    auto exactRes = search::search(pos, limits);
+    auto exactRes = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateMaterialSideToMove(p);
+    });
     const std::int32_t trueScore = exactRes.score;
 
     // 1. Exact window: [trueScore - 100, trueScore + 100]
@@ -344,7 +346,9 @@ void testCheckEvasionsAndPromotions() {
     require(promoOpt.hasValue(), "Promotion FEN parses");
     auto promoPos = *promoOpt;
 
-    auto promoRes = search::search(promoPos, limits);
+    auto promoRes = search::search(promoPos, limits, [](const Position& p) {
+        return eval::evaluateMaterialSideToMove(p);
+    });
     require(promoRes.bestMove.has_value(), "Search finds promotion");
     require(promoRes.bestMove->from() == Square::A7 && promoRes.bestMove->to() == Square::A8,
             "Pawn promotes on a8");
@@ -366,7 +370,9 @@ void testReferenceMinimaxEquivalence() {
 
         for (std::uint32_t depth = 1; depth <= 2; ++depth) {
             search::SearchLimits limits(depth);
-            auto searchRes = search::searchMinimax(pos, limits);
+            auto searchRes = search::searchMinimax(pos, limits, [](const Position& p) {
+                return eval::evaluateMaterialSideToMove(p);
+            });
 
             const bool isWhite = (pos.sideToMove() == Color::White);
             const std::int32_t refScore = referenceMinimax(pos, depth, 0, isWhite);
