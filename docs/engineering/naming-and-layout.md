@@ -20,4 +20,4 @@ The repository is a modular monorepo. Directories are introduced only when they 
 | `tools/` | Repository maintenance and developer tooling | Must not become an engine runtime dependency. |
 | `deploy/` | Future operational configuration | Contains no secrets or generated environments. |
 
-See [ADR-007](../decisions/adr-007-repository-layout.md) for the decision and consequences.
+See [ADR 001](../decisions/ADR_001_ENGINE_ARCHITECTURE.md) for the decision and consequences.

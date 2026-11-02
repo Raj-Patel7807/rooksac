@@ -1,79 +1,12 @@
-# Architecture decisions
+# Architecture Decision Records (ADRs)
 
-This file is the initial ADR register. Status distinguishes an adopted working direction from a choice still subject to evidence. New material changes should add an entry rather than silently revising history.
+RookSac architectural decisions are consolidated into three major, comprehensive decision records:
 
-## Decision index
+1. [ADR 001: Native Chess Engine Core Architecture](ADR_001_ENGINE_ARCHITECTURE.md)
+   - *Historical references consolidated:* ADR-007 (Repository layout), ADR-008 (Legal provenance), ADR-009 (Bitboard primitives), ADR-010 (Position & reversible state), ADR-011 (Magic bitboards & attack masks), ADR-012 (Legal move generation & perft certification), ADR-013 (Baseline agents & material evaluation).
 
-- [ADR-007 — Modular monorepo repository layout](adr-007-repository-layout.md)
-- [ADR-008 — Legal provenance and licence decision gate](adr-008-legal-provenance-and-license-gate.md)
-- [ADR-009 — Core primitives and square mapping](adr-009-core-primitives-and-square-mapping.md)
-- [ADR-010 — Position state representation, FEN parser, and reversible make/unmake](adr-010-position-representation-and-reversible-state.md)
-- [ADR-011 — Piece attack generation, MoveList container, and pseudo-legal move generation](adr-011-attack-generation-and-pseudo-legal-moves.md)
-- [ADR-012 — Legal move filtering, game evaluation, and perft certification](adr-012-legal-movegen-and-perft-certification.md)
-- [ADR-013 — Baseline agents, material evaluation, and self-play match harness](adr-013-baseline-agents-and-material-evaluation.md)
-- [ADR-014 — Minimax and Negamax game-tree search](adr-014-minimax-and-negamax-search.md)
-- [ADR-015 — Alpha-Beta pruning, fail-soft bounds, and staged move ordering](adr-015-alpha-beta-pruning-and-move-ordering.md)
-- [ADR-016 — Iterative deepening, quiescence search, and cooperative time control](adr-016-iterative-deepening-quiescence-and-time-control.md)
-- [ADR-017 — UCI protocol and standalone engine executable](adr-017-uci-protocol-and-standalone-engine-executable.md)
-- [ADR-018 — Zobrist hashing and memory-bounded transposition table](adr-018-zobrist-hashing-and-transposition-table.md)
-- [ADR-019 — Classical tapered evaluation](adr-019-classical-tapered-evaluation.md)
-- [ADR-020 — Advanced classical search enhancements and benchmark suite](adr-020-advanced-search-and-benchmark.md)
-- [ADR-021 — Texel evaluation tuning, self-play matches, and SPRT](adr-021-texel-tuning-and-sprt.md)
-- [ADR-022 — Supervised policy-value neural network and training pipeline](adr-022-supervised-policy-value-training.md)
-- [ADR-023 — Native neural evaluation and policy-guided move ranking](adr-023-native-neural-evaluation.md)
-- [ADR-024 — NNUE incremental accumulator evaluation research track](adr-024-nnue-research-track.md)
-- [ADR-025 — Modular FastAPI backend and bounded UCI engine pool](adr-025-fastapi-backend-engine-pool.md)
+2. [ADR 002: Search, Evaluation, and Learning Architecture](ADR_002_SEARCH_EVALUATION_AND_LEARNING.md)
+   - *Historical references consolidated:* ADR-014 (Minimax & negamax), ADR-015 (Alpha-beta pruning), ADR-016 (Iterative deepening & quiescence), ADR-018 (Zobrist hashing & transposition table), ADR-019 (Classical tapered evaluation), ADR-020 (Advanced search & benchmarking), ADR-021 (Texel tuning & SPRT), ADR-022 (Supervised policy-value training), ADR-023 (Native neural evaluation), ADR-024 (NNUE research track).
 
-## ADR-001 — C++20 for the engine
-
-- **Status:** Accepted
-- **Context / problem:** The engine needs efficient native code with modern language facilities and broad compiler support.
-- **Options considered:** Earlier C++, C++20, another primary runtime language.
-- **Decision:** Use C++20 for the engine.
-- **Reasoning:** It balances modern expressive facilities with established Windows and Linux toolchains.
-- **Trade-offs / consequences:** Contributors need a C++20-capable compiler; language features still require clear ownership and performance discipline.
-
-## ADR-002 — CMake for builds
-
-- **Status:** Accepted
-- **Context / problem:** A cross-platform project needs a build description independent of one IDE.
-- **Options considered:** CMake, IDE-specific projects, alternative build systems.
-- **Decision:** Use CMake when a build system is introduced.
-- **Reasoning:** It is widely supported by target compilers and testing tools.
-- **Trade-offs / consequences:** CMake configuration must be maintained and documented with real targets.
-
-## ADR-003 — Bitboards as the preferred initial representation
-
-- **Status:** Proposed
-- **Context / problem:** Board operations need compact, fast attack-oriented state.
-- **Options considered:** Bitboards, mailbox array, 2D array, hybrid designs.
-- **Decision:** Begin design around bitboards, subject to implementation validation and benchmarks.
-- **Reasoning:** A 64-square board maps naturally to a 64-bit word and supports parallel set operations.
-- **Trade-offs / consequences:** Bitwise code can be less immediately readable; square conventions and tests must be explicit.
-
-## ADR-004 — UCI as target protocol
-
-- **Status:** Accepted
-- **Context / problem:** The engine needs interoperable GUI communication.
-- **Options considered:** UCI, a custom protocol, direct GUI integration.
-- **Decision:** Target UCI in a later milestone.
-- **Reasoning:** UCI is widely supported and keeps the engine independent of a GUI.
-- **Trade-offs / consequences:** Protocol parsing and timing semantics need dedicated tests.
-
-## ADR-005 — Python for offline experimentation
-
-- **Status:** Accepted
-- **Context / problem:** Analysis and research benefit from a productive scripting environment without harming runtime performance.
-- **Options considered:** C++ only, Python runtime integration, Python offline tooling.
-- **Decision:** Use Python 3 for offline experiments, not the main search loop.
-- **Reasoning:** It enables data analysis and tuning while retaining a self-contained C++ engine.
-- **Trade-offs / consequences:** Tool results need reproducibility metadata and stable data boundaries.
-
-## ADR-006 — Modular monolith
-
-- **Status:** Accepted
-- **Context / problem:** The project needs separable responsibilities without distributed-system overhead.
-- **Options considered:** One undifferentiated codebase, modular monolith, separate services/libraries.
-- **Decision:** Use explicit internal modules in one native engine application.
-- **Reasoning:** It preserves direct data flow and performance while making components testable.
-- **Trade-offs / consequences:** Module boundaries require ongoing discipline; premature library splitting is avoided.
+3. [ADR 003: Platform, API, and Deployment Architecture](ADR_003_SYSTEM_AND_DEPLOYMENT_ARCHITECTURE.md)
+   - *Historical references consolidated:* ADR-017 (UCI protocol & standalone binary), ADR-025 (FastAPI backend & engine pool), ADR-026 (React TypeScript frontend), ADR-027 (Production deployment & hardening).

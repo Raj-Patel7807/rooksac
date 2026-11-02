@@ -42,4 +42,4 @@ Fixed-depth or fixed-node limits are deterministic and valuable for tests but do
 
 ## Future improvements and references
 
-Allocation may incorporate position volatility only after evidence. See [ADR-016](../decisions/adr-016-iterative-deepening-quiescence-and-time-control.md), [UCI protocol](uci-protocol.md), and [Time Management](https://www.chessprogramming.org/Time_Management).
+Allocation may incorporate position volatility only after evidence. See [ADR 002](../decisions/ADR_002_SEARCH_EVALUATION_AND_LEARNING.md), [UCI protocol](uci-protocol.md), and [Time Management](https://www.chessprogramming.org/Time_Management).
