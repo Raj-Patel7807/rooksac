@@ -10,6 +10,7 @@ This file is the initial ADR register. Status distinguishes an adopted working d
 - [ADR-010 — Position state representation, FEN parser, and reversible make/unmake](adr-010-position-representation-and-reversible-state.md)
 - [ADR-011 — Piece attack generation, MoveList container, and pseudo-legal move generation](adr-011-attack-generation-and-pseudo-legal-moves.md)
 - [ADR-012 — Legal move filtering, game evaluation, and perft certification](adr-012-legal-movegen-and-perft-certification.md)
+- [ADR-013 — Baseline agents, material evaluation, and self-play match harness](adr-013-baseline-agents-and-material-evaluation.md)
 
 ## ADR-001 — C++20 for the engine
 

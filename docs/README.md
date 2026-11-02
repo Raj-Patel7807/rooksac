@@ -1,6 +1,6 @@
 # RookSac documentation
 
-This index separates current facts from planned design. The repository has CMake build infrastructure, core chess value types, bitboard primitives, position state representation, FEN parsing, reversible make/unmake execution, piece attack tables, pseudo-legal and legal move generation, perft certification, and focused tests, but no evaluation or search; implemented artifacts define current behavior. Documentation below is authoritative for project intent, governance, and documented decisions.
+This index separates current facts from planned design. The repository has CMake build infrastructure, core chess value types, bitboard primitives, position state representation, FEN parsing, reversible make/unmake execution, piece attack tables, pseudo-legal and legal move generation, perft certification, material evaluation, baseline agents (random and greedy), and a match harness, but no tree search or positional evaluation; implemented artifacts define current behavior. Documentation below is authoritative for project intent, governance, and documented decisions.
 
 ## Product direction
 

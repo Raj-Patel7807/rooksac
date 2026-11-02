@@ -4,9 +4,24 @@
 
 Evaluation estimates a position’s desirability when search does not reach a terminal result. Material evaluation counts piece value; positional evaluation considers where and how pieces and pawns are arranged. Both are needed because equal material positions can differ greatly.
 
-## Planned RookSac design
+## Implemented material evaluation and baseline agents
 
-The planned classical path starts with material, then piece-square tables, activity and mobility, pawn structure, king safety, passed pawns, endgame factors, and game-phase awareness. Terms should have clear ownership, documented sign convention, and tests where a deterministic property can be asserted.
+RookSac implements:
+- `eval::evaluateMaterial(const Position&, const MaterialWeights&)`: Computes net material balance in centipawns from the perspective of White (positive favors White).
+- `eval::evaluateMaterialSideToMove(const Position&, const MaterialWeights&)`: Computes net material balance relative to the side to move.
+- `eval::MaterialWeights`: Configurable scale (default: P=100, N=320, B=330, R=500, Q=900).
+- `Agent` pure virtual interface for move selection policies.
+- `RandomAgent`: Uniform random legal move selector with an injectable 64-bit seed (`std::mt19937_64`).
+- `GreedyAgent`: 1-ply greedy agent that evaluates all candidate moves via make/unmake and selects the move maximizing immediate material score.
+- `playMatch` and `rooksac_match_harness`: Automated self-play match execution between any two agents.
+
+### Known limitations of greedy baseline
+
+`GreedyAgent` evaluates solely based on the material balance immediately after its own candidate move. It has zero depth lookahead into opponent replies, zero understanding of piece defense, king safety, or positional value. Consequently, it will greedily capture defended pieces with higher-value attackers (e.g. QxP where P is defended by another pawn).
+
+## Planned positional evaluation
+
+Positional evaluation terms—piece-square tables, pawn structure, king safety, mobility, and endgame phase awareness—remain planned for future sprints.
 
 ## Alternatives and trade-offs
 
