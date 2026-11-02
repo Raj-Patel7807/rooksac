@@ -61,6 +61,7 @@ void testUciHandshakeAndReady() {
     const std::string output = out.str();
     require(output.find("id name RookSac 0.1.0\n") != std::string::npos, "Emits id name");
     require(output.find("id author RookSac Authors\n") != std::string::npos, "Emits id author");
+    require(output.find("option name Hash type spin default 16 min 1 max 1024\n") != std::string::npos, "Emits Hash option");
     require(output.find("uciok\n") != std::string::npos, "Emits uciok");
     require(output.find("readyok\n") != std::string::npos, "Emits readyok");
     require(err.str().empty(), "No errors on standard handshake");

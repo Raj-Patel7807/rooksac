@@ -6,6 +6,8 @@
 #include <sstream>
 #include <vector>
 
+#include "rooksac/zobrist.hpp"
+
 namespace rooksac {
 
 namespace {
@@ -149,6 +151,8 @@ bool Position::checkInvariants() const noexcept {
 
     if (fullmoveNumber_ == 0) return false;
 
+    if (zobristHash_ != zobrist::computeHash(*this)) return false;
+
     return true;
 }
 
@@ -289,6 +293,7 @@ FenResult<Position> Position::fromFen(std::string_view fen) noexcept {
         return FenParseError::InvalidFullmoveNumber;
     }
     pos.fullmoveNumber_ = fullmove;
+    pos.zobristHash_ = zobrist::computeHash(pos);
 
     assert(pos.checkInvariants());
     return pos;
@@ -379,6 +384,7 @@ bool Position::makeMove(Move move, UndoState& undoState) noexcept {
     undoState.castlingRights = castlingRights_;
     undoState.halfmoveClock = halfmoveClock_;
     undoState.capturedPiece = capturedPiece;
+    undoState.zobristHash = zobristHash_;
 
     bool isEnPassantCapture = false;
     Square enPassantPawnSquare = Square::None;
@@ -477,6 +483,55 @@ bool Position::makeMove(Move move, UndoState& undoState) noexcept {
     // Flip side to move
     sideToMove_ = opposite(sideToMove_);
 
+    // Incremental Zobrist update
+    const auto& ztable = zobrist::getTable();
+    // 1. Moving piece from -> to (or promotion piece)
+    zobristHash_ ^= ztable.pieceSquare[static_cast<std::size_t>(movingPiece)][squareIndex(from)];
+    zobristHash_ ^= ztable.pieceSquare[static_cast<std::size_t>(pieceToPlace)][squareIndex(to)];
+
+    // 2. Captured piece removal
+    if (capturedPiece != Piece::None) {
+        zobristHash_ ^= ztable.pieceSquare[static_cast<std::size_t>(capturedPiece)][squareIndex(to)];
+    } else if (isEnPassantCapture) {
+        zobristHash_ ^= ztable.pieceSquare[static_cast<std::size_t>(undoState.capturedPiece)][squareIndex(enPassantPawnSquare)];
+    }
+
+    // 3. Castling rook move
+    if (movingType == PieceType::King) {
+        if (from == Square::E1 && to == Square::G1) {
+            zobristHash_ ^= ztable.pieceSquare[static_cast<std::size_t>(Piece::WhiteRook)][squareIndex(Square::H1)];
+            zobristHash_ ^= ztable.pieceSquare[static_cast<std::size_t>(Piece::WhiteRook)][squareIndex(Square::F1)];
+        } else if (from == Square::E1 && to == Square::C1) {
+            zobristHash_ ^= ztable.pieceSquare[static_cast<std::size_t>(Piece::WhiteRook)][squareIndex(Square::A1)];
+            zobristHash_ ^= ztable.pieceSquare[static_cast<std::size_t>(Piece::WhiteRook)][squareIndex(Square::D1)];
+        } else if (from == Square::E8 && to == Square::G8) {
+            zobristHash_ ^= ztable.pieceSquare[static_cast<std::size_t>(Piece::BlackRook)][squareIndex(Square::H8)];
+            zobristHash_ ^= ztable.pieceSquare[static_cast<std::size_t>(Piece::BlackRook)][squareIndex(Square::F8)];
+        } else if (from == Square::E8 && to == Square::C8) {
+            zobristHash_ ^= ztable.pieceSquare[static_cast<std::size_t>(Piece::BlackRook)][squareIndex(Square::A8)];
+            zobristHash_ ^= ztable.pieceSquare[static_cast<std::size_t>(Piece::BlackRook)][squareIndex(Square::D8)];
+        }
+    }
+
+    // 4. Side to move flip
+    zobristHash_ ^= ztable.sideToMove;
+
+    // 5. Castling rights change
+    if (castlingRights_ != undoState.castlingRights) {
+        const auto oldC = static_cast<std::size_t>(static_cast<std::uint8_t>(undoState.castlingRights)) & 0x0FU;
+        const auto newC = static_cast<std::size_t>(static_cast<std::uint8_t>(castlingRights_)) & 0x0FU;
+        zobristHash_ ^= ztable.castling[oldC];
+        zobristHash_ ^= ztable.castling[newC];
+    }
+
+    // 6. En-passant square change
+    if (undoState.enPassantSquare != Square::None) {
+        zobristHash_ ^= ztable.enPassantFile[static_cast<std::size_t>(fileOf(undoState.enPassantSquare))];
+    }
+    if (enPassantSquare_ != Square::None) {
+        zobristHash_ ^= ztable.enPassantFile[static_cast<std::size_t>(fileOf(enPassantSquare_))];
+    }
+
     assert(checkInvariants());
     return true;
 }
@@ -542,6 +597,7 @@ void Position::unmakeMove(Move move, const UndoState& undoState) noexcept {
     enPassantSquare_ = undoState.enPassantSquare;
     castlingRights_ = undoState.castlingRights;
     halfmoveClock_ = undoState.halfmoveClock;
+    zobristHash_ = undoState.zobristHash;
 
     assert(checkInvariants());
 }

@@ -12,6 +12,7 @@ struct UndoState {
     CastlingRights castlingRights = CastlingRights::None;
     std::uint32_t halfmoveClock = 0;
     Piece capturedPiece = Piece::None;
+    std::uint64_t zobristHash = 0;
 };
 
 }  // namespace rooksac

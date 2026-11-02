@@ -29,6 +29,7 @@ public:
     [[nodiscard]] Color sideToMove() const noexcept { return sideToMove_; }
     [[nodiscard]] CastlingRights castlingRights() const noexcept { return castlingRights_; }
     [[nodiscard]] Square enPassantSquare() const noexcept { return enPassantSquare_; }
+    [[nodiscard]] std::uint64_t zobristHash() const noexcept { return zobristHash_; }
     [[nodiscard]] std::uint32_t halfmoveClock() const noexcept { return halfmoveClock_; }
     [[nodiscard]] std::uint32_t fullmoveNumber() const noexcept { return fullmoveNumber_; }
 
@@ -80,6 +81,7 @@ private:
     Square enPassantSquare_{Square::None};
     std::uint32_t halfmoveClock_{0};
     std::uint32_t fullmoveNumber_{1};
+    std::uint64_t zobristHash_{0};
 };
 
 }  // namespace rooksac

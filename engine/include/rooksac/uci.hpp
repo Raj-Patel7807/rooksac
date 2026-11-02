@@ -11,6 +11,7 @@
 #include "rooksac/move.hpp"
 #include "rooksac/position.hpp"
 #include "rooksac/search.hpp"
+#include "rooksac/transposition_table.hpp"
 
 namespace rooksac {
 namespace uci {
@@ -69,6 +70,7 @@ private:
     std::ostream& err_;
 
     Position position_{Position::startPosition()};
+    tt::TranspositionTable ttable_{tt::TranspositionTable::kDefaultSizeBytes};
 
     search::SearchStopToken stopToken_{};
     std::unique_ptr<std::thread> searchThread_{nullptr};

@@ -11,6 +11,7 @@
 #include "rooksac/move_list.hpp"
 #include "rooksac/position.hpp"
 #include "rooksac/time_management.hpp"
+#include "rooksac/transposition_table.hpp"
 
 namespace rooksac {
 namespace search {
@@ -57,6 +58,8 @@ struct SearchStats {
     std::uint64_t nodes = 0;
     std::uint64_t qnodes = 0;
     std::uint64_t cutoffs = 0;
+    std::uint64_t ttHits = 0;
+    std::uint64_t ttCutoffs = 0;
     std::uint32_t maxDepth = 0;
 };
 
@@ -121,14 +124,15 @@ using LeafEvaluator = std::function<std::int32_t(const Position&)>;
         return eval::evaluateMaterialSideToMove(pos);
     });
 
-/// \brief Progressive Iterative Deepening search controller with time management and stop token.
+/// \brief Progressive Iterative Deepening search controller with time management, stop token, and optional transposition table.
 [[nodiscard]] SearchResult search(
     Position& position,
     const SearchLimits& limits,
     const LeafEvaluator& evaluator = [](const Position& pos) {
         return eval::evaluateMaterialSideToMove(pos);
     },
-    SearchStopToken* stopToken = nullptr);
+    SearchStopToken* stopToken = nullptr,
+    tt::TranspositionTable* ttable = nullptr);
 
 }  // namespace search
 }  // namespace rooksac

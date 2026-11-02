@@ -69,7 +69,9 @@ add_library(rooksac_core
     engine/src/position.cpp
     engine/src/search.cpp
     engine/src/time_management.cpp
-    engine/src/uci.cpp)
+    engine/src/transposition_table.cpp
+    engine/src/uci.cpp
+    engine/src/zobrist.cpp)
 target_compile_features(rooksac_core PUBLIC cxx_std_20)
 target_include_directories(rooksac_core PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/engine/include>)
 rooksac_configure_warnings(rooksac_core)
@@ -124,6 +126,12 @@ rooksac_configure_warnings(rooksac_uci_test)
 rooksac_configure_sanitizers(rooksac_uci_test)
 rooksac_configure_clang_tidy(rooksac_uci_test)
 
+add_executable(rooksac_zobrist_tt_test engine/tests/zobrist-tt-test.cpp)
+target_link_libraries(rooksac_zobrist_tt_test PRIVATE rooksac_core)
+rooksac_configure_warnings(rooksac_zobrist_tt_test)
+rooksac_configure_sanitizers(rooksac_zobrist_tt_test)
+rooksac_configure_clang_tidy(rooksac_zobrist_tt_test)
+
 add_executable(rooksac engine/apps/rooksac_main.cpp)
 target_link_libraries(rooksac PRIVATE rooksac_core)
 rooksac_configure_warnings(rooksac)
@@ -139,6 +147,7 @@ if(BUILD_TESTING)
     add_test(NAME rooksac.agent COMMAND rooksac_agent_test)
     add_test(NAME rooksac.search COMMAND rooksac_search_test)
     add_test(NAME rooksac.uci COMMAND rooksac_uci_test)
+    add_test(NAME rooksac.zobrist_tt COMMAND rooksac_zobrist_tt_test)
 endif()
 
 add_custom_target(

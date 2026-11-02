@@ -14,6 +14,7 @@ namespace {
 
 struct SearchContext {
     SearchStopToken* stopToken = nullptr;
+    tt::TranspositionTable* ttable = nullptr;
     std::optional<std::chrono::steady_clock::time_point> deadline;
     std::optional<std::uint64_t> maxNodes;
     std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
@@ -179,7 +180,34 @@ std::int32_t alphaBetaInternal(
         return kDrawScore;
     }
 
-    // 2. Generate legal moves to detect terminal conditions
+    // 2. Transposition table probe
+    const std::uint64_t hash = position.zobristHash();
+    std::optional<Move> ttMove = std::nullopt;
+    if (context && context->ttable) {
+        const auto ttProbe = context->ttable->probe(hash, ply);
+        if (ttProbe.hit) {
+            ++stats.ttHits;
+            ttMove = ttProbe.move;
+            // Can we use TT score for cutoff?
+            // Only if depth of searched entry is >= current search depth
+            if (ttProbe.depth >= depth) {
+                if (ttProbe.bound == tt::Bound::Exact) {
+                    ++stats.ttCutoffs;
+                    return ttProbe.score;
+                }
+                if (ttProbe.bound == tt::Bound::Lower && ttProbe.score >= beta) {
+                    ++stats.ttCutoffs;
+                    return ttProbe.score;
+                }
+                if (ttProbe.bound == tt::Bound::Upper && ttProbe.score <= alpha) {
+                    ++stats.ttCutoffs;
+                    return ttProbe.score;
+                }
+            }
+        }
+    }
+
+    // 3. Generate legal moves to detect terminal conditions
     MoveList legalMoves;
     movegen::generateLegalMoves(position, legalMoves);
 
@@ -190,16 +218,18 @@ std::int32_t alphaBetaInternal(
         return kDrawScore;
     }
 
-    // 3. Leaf node: transition to Quiescence search
+    // 4. Leaf node: transition to Quiescence search
     if (depth == 0) {
         return quiescenceInternal(position, alpha, beta, ply, stats, evaluator, context);
     }
 
-    // 4. Staged move ordering
-    orderMoves(position, legalMoves);
+    // 5. Staged move ordering (with TT best move prioritized)
+    orderMoves(position, legalMoves, ttMove);
 
-    // 5. Fail-soft Alpha-Beta recursion
+    // 6. Fail-soft Alpha-Beta recursion
+    const std::int32_t originalAlpha = alpha;
     std::int32_t bestScore = -kInfinity;
+    std::optional<Move> bestMove = std::nullopt;
 
     for (std::size_t i = 0; i < legalMoves.size(); ++i) {
         const Move m = legalMoves[i];
@@ -215,6 +245,7 @@ std::int32_t alphaBetaInternal(
 
         if (score > bestScore) {
             bestScore = score;
+            bestMove = m;
         }
         if (score > alpha) {
             alpha = score;
@@ -223,6 +254,17 @@ std::int32_t alphaBetaInternal(
             ++stats.cutoffs;
             break;  // Beta cutoff (fail-high)
         }
+    }
+
+    // 7. Store result in Transposition Table if not aborted
+    if (context && context->ttable && (!context->aborted)) {
+        tt::Bound bound = tt::Bound::Exact;
+        if (bestScore <= originalAlpha) {
+            bound = tt::Bound::Upper;
+        } else if (bestScore >= beta) {
+            bound = tt::Bound::Lower;
+        }
+        context->ttable->store(hash, ply, depth, bestScore, bound, bestMove);
     }
 
     return bestScore;
@@ -357,9 +399,11 @@ SearchResult search(
     Position& position,
     const SearchLimits& limits,
     const LeafEvaluator& evaluator,
-    SearchStopToken* stopToken) {
+    SearchStopToken* stopToken,
+    tt::TranspositionTable* ttable) {
     SearchContext context;
     context.stopToken = stopToken;
+    context.ttable = ttable;
     context.maxNodes = limits.maxNodes;
 
     // Time allocation setup
@@ -456,6 +500,11 @@ SearchResult search(
         lastCompletedResult.score = iterationBestScore;
         lastCompletedResult.completedDepth = currentDepth;
         pvMove = iterationBestMove;
+
+        // Store root position in TT
+        if (ttable) {
+            ttable->store(position.zobristHash(), 0, currentDepth, iterationBestScore, tt::Bound::Exact, iterationBestMove);
+        }
 
         // If optimal thinking time reached, do not start next iteration
         if (optimalTimeMs.has_value()) {

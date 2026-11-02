@@ -192,6 +192,7 @@ bool EngineSession::processCommand(std::string_view line) {
 void EngineSession::handleUci() {
     out_ << "id name RookSac 0.1.0\n";
     out_ << "id author RookSac Authors\n";
+    out_ << "option name Hash type spin default 16 min 1 max 1024\n";
     out_ << "uciok\n";
     out_.flush();
 }
@@ -205,6 +206,7 @@ void EngineSession::handleUciNewGame() {
     stopSearch();
     joinSearch();
     position_ = Position::startPosition();
+    ttable_.clear();
 }
 
 void EngineSession::handlePosition(std::string_view args) {
@@ -339,13 +341,15 @@ void EngineSession::searchWorker(search::SearchLimits limits) {
         limits.timeAllocation = TimeManager::allocate(tc);
     }
 
+    ttable_.advanceAge();
     const auto result = search::search(
         position_,
         limits,
         [](const Position& pos) {
             return eval::evaluateMaterialSideToMove(pos);
         },
-        &stopToken_);
+        &stopToken_,
+        &ttable_);
 
     // Emit bestmove strictly to stdout
     if (result.bestMove.has_value()) {
@@ -364,8 +368,24 @@ void EngineSession::handleStop() {
 }
 
 void EngineSession::handleSetOption(std::string_view args) {
-    // We do not advertise unsupported options per UCI design principles
-    err_ << "info string setoption received: " << args << " (no custom options supported)\n";
+    const auto tokens = splitTokens(args);
+    // Standard format: setoption name <name> [value <val>]
+    if (tokens.size() >= 4 && tokens[0] == "name" && tokens[2] == "value") {
+        std::string optName = tokens[1];
+        std::transform(optName.begin(), optName.end(), optName.begin(), [](unsigned char c) {
+            return static_cast<char>(std::tolower(c));
+        });
+        if (optName == "hash") {
+            if (auto mb = parseUint(tokens[3]); mb.has_value()) {
+                stopSearch();
+                joinSearch();
+                ttable_.resize(static_cast<std::size_t>(*mb) * 1024ULL * 1024ULL);
+                return;
+            }
+        }
+    }
+
+    err_ << "info string setoption received: " << args << " (unsupported option or invalid value)\n";
 }
 
 void EngineSession::stopSearch() {
