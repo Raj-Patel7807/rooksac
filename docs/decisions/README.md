@@ -22,6 +22,7 @@ This file is the initial ADR register. Status distinguishes an adopted working d
 - [ADR-022 — Supervised policy-value neural network and training pipeline](adr-022-supervised-policy-value-training.md)
 - [ADR-023 — Native neural evaluation and policy-guided move ranking](adr-023-native-neural-evaluation.md)
 - [ADR-024 — NNUE incremental accumulator evaluation research track](adr-024-nnue-research-track.md)
+- [ADR-025 — Modular FastAPI backend and bounded UCI engine pool](adr-025-fastapi-backend-engine-pool.md)
 
 ## ADR-001 — C++20 for the engine
 
