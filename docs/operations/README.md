@@ -1,3 +1,25 @@
-# Operations
+# Operations & Deployment
 
-GitHub Actions CI is configured to build and test the native CMake smoke-test target on Linux (GCC and Clang) and Windows (MSVC), and to run formatting, clang-tidy, and Clang ASan/UBSan quality gates. No package, deployment configuration, or hosted environment exists. Future operational assets belong under `deploy/` when they are real, reproducible, and free of credentials or generated environment state.
+RookSac production infrastructure is organized into isolated containerized tiers managed via Docker Compose under `deploy/docker/`.
+
+## Architecture Topology
+
+```
+[ User Browser ]
+       |
+       v (Port 8080/443: HTTPS, CSP, Security Headers)
+[ Frontend (Nginx + React SPA) ]
+       |
+  (Internal Bridge Network: internal-net)
+       |
+       +--> [ Backend (FastAPI + C++ UCI Engine Pool) ]
+       |          |
+       |          +--> [ PostgreSQL 16 (DB Data) ]
+       |          +--> [ Redis 7 (Cache & Queue) ]
+```
+
+## Runbook & Guides
+
+- [Runbook & Procedures](runbook.md): Deployment, health checks, backup & restore rehearsal, and rollback workflows.
+- [Environment Variables Schema](../../deploy/ENV_SCHEMA.md): Complete specification of configuration and secrets.
+- [v1.0.0 Release Notes](../product/release-notes-v1.0.md): Product summary, features, and limitations.
