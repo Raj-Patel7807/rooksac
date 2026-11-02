@@ -60,7 +60,9 @@ rooksac_configure_clang_tidy(rooksac_build_smoke_test)
 
 add_library(rooksac_core
     engine/src/attacks.cpp
+    engine/src/legal_movegen.cpp
     engine/src/movegen.cpp
+    engine/src/perft.cpp
     engine/src/position.cpp)
 target_compile_features(rooksac_core PUBLIC cxx_std_20)
 target_include_directories(rooksac_core PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/engine/include>)
@@ -86,11 +88,18 @@ rooksac_configure_warnings(rooksac_movegen_test)
 rooksac_configure_sanitizers(rooksac_movegen_test)
 rooksac_configure_clang_tidy(rooksac_movegen_test)
 
+add_executable(rooksac_perft_test engine/tests/perft-test.cpp)
+target_link_libraries(rooksac_perft_test PRIVATE rooksac_core)
+rooksac_configure_warnings(rooksac_perft_test)
+rooksac_configure_sanitizers(rooksac_perft_test)
+rooksac_configure_clang_tidy(rooksac_perft_test)
+
 if(BUILD_TESTING)
     add_test(NAME rooksac.build-smoke COMMAND rooksac_build_smoke_test)
     add_test(NAME rooksac.core-types COMMAND rooksac_core_types_test)
     add_test(NAME rooksac.position COMMAND rooksac_position_test)
     add_test(NAME rooksac.movegen COMMAND rooksac_movegen_test)
+    add_test(NAME rooksac.perft COMMAND rooksac_perft_test)
 endif()
 
 add_custom_target(
