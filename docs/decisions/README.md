@@ -18,6 +18,7 @@ This file is the initial ADR register. Status distinguishes an adopted working d
 - [ADR-018 — Zobrist hashing and memory-bounded transposition table](adr-018-zobrist-hashing-and-transposition-table.md)
 - [ADR-019 — Classical tapered evaluation](adr-019-classical-tapered-evaluation.md)
 - [ADR-020 — Advanced classical search enhancements and benchmark suite](adr-020-advanced-search-and-benchmark.md)
+- [ADR-021 — Texel evaluation tuning, self-play matches, and SPRT](adr-021-texel-tuning-and-sprt.md)
 
 ## ADR-001 — C++20 for the engine
 
