@@ -16,6 +16,7 @@ This file is the initial ADR register. Status distinguishes an adopted working d
 - [ADR-016 — Iterative deepening, quiescence search, and cooperative time control](adr-016-iterative-deepening-quiescence-and-time-control.md)
 - [ADR-017 — UCI protocol and standalone engine executable](adr-017-uci-protocol-and-standalone-engine-executable.md)
 - [ADR-018 — Zobrist hashing and memory-bounded transposition table](adr-018-zobrist-hashing-and-transposition-table.md)
+- [ADR-019 — Classical tapered evaluation](adr-019-classical-tapered-evaluation.md)
 
 ## ADR-001 — C++20 for the engine
 
