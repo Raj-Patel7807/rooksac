@@ -64,6 +64,14 @@ public:
     [[nodiscard]] bool makeMove(Move move, UndoState& undoState) noexcept;
     void unmakeMove(Move move, const UndoState& undoState) noexcept;
 
+    /// \brief Makes a null move: passes the turn to the opponent without moving any piece.
+    /// Used by null-move pruning. The caller must ensure the position is valid for a null move
+    /// (not in check; sufficient material to avoid zugzwang risk).
+    void makeNullMove(UndoState& undoState) noexcept;
+
+    /// \brief Restores the position after a null move made via makeNullMove().
+    void unmakeNullMove(const UndoState& undoState) noexcept;
+
     [[nodiscard]] bool checkInvariants() const noexcept;
 
 private:

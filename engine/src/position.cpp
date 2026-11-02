@@ -602,4 +602,51 @@ void Position::unmakeMove(Move move, const UndoState& undoState) noexcept {
     assert(checkInvariants());
 }
 
+void Position::makeNullMove(UndoState& undoState) noexcept {
+    // Save reversible state (no piece moves, but en-passant and half-move clock change)
+    undoState.enPassantSquare = enPassantSquare_;
+    undoState.castlingRights = castlingRights_;
+    undoState.halfmoveClock = halfmoveClock_;
+    undoState.capturedPiece = Piece::None;
+    undoState.zobristHash = zobristHash_;
+
+    const zobrist::ZobristTable& ztable = zobrist::getTable();
+
+    // Remove the en-passant file key (if any) before clearing en passant
+    if (enPassantSquare_ != Square::None) {
+        zobristHash_ ^= ztable.enPassantFile[static_cast<std::size_t>(fileOf(enPassantSquare_))];
+    }
+
+    // Clear en-passant: passing the turn means no en-passant opportunity
+    enPassantSquare_ = Square::None;
+
+    // Increment half-move clock (null move is not a pawn move or capture)
+    ++halfmoveClock_;
+
+    // Fullmove number increments after Black moves
+    if (sideToMove_ == Color::Black) {
+        ++fullmoveNumber_;
+    }
+
+    // Flip side-to-move and update Zobrist key
+    sideToMove_ = opposite(sideToMove_);
+    zobristHash_ ^= ztable.sideToMove;
+}
+
+void Position::unmakeNullMove(const UndoState& undoState) noexcept {
+    // Flip side-to-move back
+    sideToMove_ = opposite(sideToMove_);
+
+    // Restore fullmove number if Black was the side-to-move before null move
+    if (sideToMove_ == Color::Black) {
+        --fullmoveNumber_;
+    }
+
+    // Restore all reversible state (including zobristHash_)
+    enPassantSquare_ = undoState.enPassantSquare;
+    castlingRights_ = undoState.castlingRights;
+    halfmoveClock_ = undoState.halfmoveClock;
+    zobristHash_ = undoState.zobristHash;
+}
+
 }  // namespace rooksac
