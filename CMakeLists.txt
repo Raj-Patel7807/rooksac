@@ -72,6 +72,7 @@ add_library(rooksac_core
     engine/src/search.cpp
     engine/src/time_management.cpp
     engine/src/transposition_table.cpp
+    engine/src/tuning.cpp
     engine/src/uci.cpp
     engine/src/zobrist.cpp)
 target_compile_features(rooksac_core PUBLIC cxx_std_20)
@@ -152,6 +153,12 @@ rooksac_configure_warnings(rooksac_bench)
 rooksac_configure_sanitizers(rooksac_bench)
 rooksac_configure_clang_tidy(rooksac_bench)
 
+add_executable(rooksac_tuning_test engine/tests/tuning-test.cpp)
+target_link_libraries(rooksac_tuning_test PRIVATE rooksac_core)
+rooksac_configure_warnings(rooksac_tuning_test)
+rooksac_configure_sanitizers(rooksac_tuning_test)
+rooksac_configure_clang_tidy(rooksac_tuning_test)
+
 if(BUILD_TESTING)
     add_test(NAME rooksac.build-smoke COMMAND rooksac_build_smoke_test)
     add_test(NAME rooksac.core-types COMMAND rooksac_core_types_test)
@@ -163,6 +170,7 @@ if(BUILD_TESTING)
     add_test(NAME rooksac.uci COMMAND rooksac_uci_test)
     add_test(NAME rooksac.zobrist_tt COMMAND rooksac_zobrist_tt_test)
     add_test(NAME rooksac.eval COMMAND rooksac_eval_test)
+    add_test(NAME rooksac.tuning COMMAND rooksac_tuning_test)
 endif()
 
 add_custom_target(
