@@ -68,7 +68,8 @@ add_library(rooksac_core
     engine/src/perft.cpp
     engine/src/position.cpp
     engine/src/search.cpp
-    engine/src/time_management.cpp)
+    engine/src/time_management.cpp
+    engine/src/uci.cpp)
 target_compile_features(rooksac_core PUBLIC cxx_std_20)
 target_include_directories(rooksac_core PUBLIC $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/engine/include>)
 rooksac_configure_warnings(rooksac_core)
@@ -117,6 +118,18 @@ rooksac_configure_warnings(rooksac_match_harness)
 rooksac_configure_sanitizers(rooksac_match_harness)
 rooksac_configure_clang_tidy(rooksac_match_harness)
 
+add_executable(rooksac_uci_test engine/tests/uci-test.cpp)
+target_link_libraries(rooksac_uci_test PRIVATE rooksac_core)
+rooksac_configure_warnings(rooksac_uci_test)
+rooksac_configure_sanitizers(rooksac_uci_test)
+rooksac_configure_clang_tidy(rooksac_uci_test)
+
+add_executable(rooksac engine/apps/rooksac_main.cpp)
+target_link_libraries(rooksac PRIVATE rooksac_core)
+rooksac_configure_warnings(rooksac)
+rooksac_configure_sanitizers(rooksac)
+rooksac_configure_clang_tidy(rooksac)
+
 if(BUILD_TESTING)
     add_test(NAME rooksac.build-smoke COMMAND rooksac_build_smoke_test)
     add_test(NAME rooksac.core-types COMMAND rooksac_core_types_test)
@@ -125,6 +138,7 @@ if(BUILD_TESTING)
     add_test(NAME rooksac.perft COMMAND rooksac_perft_test)
     add_test(NAME rooksac.agent COMMAND rooksac_agent_test)
     add_test(NAME rooksac.search COMMAND rooksac_search_test)
+    add_test(NAME rooksac.uci COMMAND rooksac_uci_test)
 endif()
 
 add_custom_target(
