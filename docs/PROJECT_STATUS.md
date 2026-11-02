@@ -20,6 +20,7 @@ This page is the authoritative status summary. It describes repository facts, no
 - UCI protocol and standalone executable: Universal Chess Interface protocol implementation (`rooksac::uci::EngineSession`) supporting `uci`, `isready`, `ucinewgame`, `position`, `go` (depth, movetime, wtime/btime/winc/binc, nodes, infinite), `stop`, and `quit`; strict stdout stream discipline, stderr diagnostic routing, and standalone `rooksac` executable.
 - Zobrist hashing and transposition table: deterministic 64-bit Zobrist keys updated incrementally on make/unmake and verified with full recalculation; memory-bounded `TranspositionTable` with 16-byte packed entries, depth-preferred replacement with generational aging, mate score ply normalization, and configurable UCI `Hash` option.
 - Classical tapered evaluation: tapered `(mg, eg)` score evaluation blended by non-pawn material game phase (24 total), colour-mirrored Piece-Square Tables (PSTs), pawn structure terms (isolated, doubled, passed), king safety penalties (missing shield pawns, semi-open files), piece activity (bishop pair, open rooks), safe mobility, and centralized `EvalParameters`.
+- Advanced classical search and benchmark suite: aspiration windows with fail-soft widening, Principal Variation Search (PVS), Late Move Reductions (LMR) with full-depth re-search, null-move pruning (NMP) with zugzwang safeguards, killer move heuristic (2 slots/ply), `SearchOptions` feature isolation, canonical 8-position fixed FEN benchmark suite, standalone `rooksac_bench` executable, and protocol-safe UCI `bench` command.
 
 ## In progress
 
@@ -27,7 +28,7 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Planned
 
-- Search enhancements (Null-move pruning, Late Move Reductions - LMR, Futility pruning).
+- Futility pruning and extended search heuristics.
 - Perft and benchmark tools, offline research tooling, and repository tools.
 - A separate application layer under `app/` that communicates with the engine through UCI/process boundaries.
 - CI, packaging, deployment, and release processes.
@@ -39,4 +40,4 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Current limitations
 
-The engine uses classical tapered evaluation; neural network evaluation (NNUE) is not yet implemented. `rooksac_core` provides core types, bitboard operations, position state, FEN parsing, make/unmake move transitions, piece attacks, pseudo-legal and legal move generation, game evaluation, perft testing, material evaluation, classical tapered evaluation, baseline agents (random and greedy), fail-soft Alpha-Beta search with staged move ordering, iterative deepening, quiescence search, time management, deterministic Zobrist hashing, memory-bounded transposition tables, UCI protocol handling, standalone executable `rooksac`, and match runner `rooksac_match_harness`.
+The engine uses classical tapered evaluation; neural network evaluation (NNUE) is not yet implemented. `rooksac_core` provides core types, bitboard operations, position state, FEN parsing, make/unmake move transitions, piece attacks, pseudo-legal and legal move generation, game evaluation, perft testing, material evaluation, classical tapered evaluation, baseline agents (random and greedy), fail-soft Alpha-Beta search with staged move ordering, iterative deepening, quiescence search, time management, deterministic Zobrist hashing, memory-bounded transposition tables, UCI protocol handling, advanced search heuristics (aspiration windows, PVS, LMR, NMP, killer moves), benchmark suite, standalone executable `rooksac`, benchmark binary `rooksac_bench`, and match runner `rooksac_match_harness`.

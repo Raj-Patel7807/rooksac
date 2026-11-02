@@ -1,17 +1,26 @@
 # Benchmarking
 
-RookSac will measure performance only with reproducible conditions. A number without position set, build configuration, compiler, flags, hardware, and method is not a meaningful comparison.
+RookSac measures performance under strictly reproducible conditions. A number without position set, build configuration, compiler, flags, hardware, and method is not a meaningful comparison.
 
-## Planned measurements
+## Implemented benchmark suite
 
-- Nodes per second (NPS), with node definition stated.
-- Reached search depth and elapsed search time.
-- Memory consumption, including transposition-table configuration.
-- Fixed benchmark positions and position-set version.
-- Before/after results from the same environment.
+The benchmark suite is implemented in `rooksac/benchmark.hpp` and `engine/src/benchmark.cpp`, with a standalone CLI runner `rooksac_bench` (`engine/apps/rooksac_bench_main.cpp`) and an integrated UCI `bench` command:
 
-## Method
+- **Canonical Suite:** 8 diverse positions covering opening (`Startpos`), tactical sharpness (`Kiwipete`, `Tactical-Midgame`), endgames (`Rook-Endgame`, `Queen-Endgame`, `Knight-Pawn`), dynamic pawn structures (`Passed-Pawns`), and kingside attacking play (`Kingside-Attack`).
+- **Reproducible Metrics:** Per-position and aggregated total nodes, elapsed time in milliseconds, nodes per second (NPS), best move, and score.
+- **Environment Metadata:** Compiler name, version, and build configuration (`Release` vs `Debug`) automatically embedded in reports.
+- **Repetitions:** Supports multiple iterations and computes the median node count and elapsed time across runs to eliminate system jitter.
+- **Protocol Safety:** In UCI mode, the `bench` command routes diagnostic human-readable reports to `errStream` (stderr) and outputs only a standard single-line `info nodes <N> nps <N>` on stdout, keeping UCI protocol compliance unbroken.
 
-Use release-oriented builds only after a real build exists, warm up when appropriate, repeat runs, record variance or raw runs, and distinguish throughput from playing strength. Pin or disclose relevant OS, CPU, compiler, CMake generator, flags, and clock source. Avoid comparing results across different machines as if they were direct optimization evidence.
+## Usage
 
-No benchmark harness or results exist. See [performance](performance.md).
+```powershell
+# Run canonical benchmark with default settings (depth 4)
+./rooksac_bench
+
+# Run with custom depth and repetitions
+./rooksac_bench --depth 5 --reps 3
+
+# Or via UCI prompt:
+bench
+```
