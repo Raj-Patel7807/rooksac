@@ -63,6 +63,7 @@ add_library(rooksac_core
     engine/src/legal_movegen.cpp
     engine/src/match.cpp
     engine/src/material.cpp
+    engine/src/move_order.cpp
     engine/src/movegen.cpp
     engine/src/perft.cpp
     engine/src/position.cpp
