@@ -1,6 +1,28 @@
 import os
+import shutil
 from typing import List
 from pydantic_settings import BaseSettings
+
+def resolve_engine_binary() -> str:
+    env_path = os.getenv("ENGINE_BINARY_PATH")
+    if env_path and os.path.exists(env_path):
+        return env_path
+    
+    # Check standard local and build locations
+    candidates = [
+        "build/rooksac",
+        "build/rooksac.exe",
+        "/opt/rooksac/bin/rooksac",
+        "out/build/release/engine/apps/rooksac",
+        "out/build/debug/engine/apps/rooksac",
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    
+    # Fallback to system PATH or default
+    which_path = shutil.which("rooksac")
+    return which_path if which_path else candidates[0]
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "RookSac Backend"
@@ -9,7 +31,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "production")
     
     # Engine orchestration
-    ENGINE_BINARY_PATH: str = os.getenv("ENGINE_BINARY_PATH", "build/rooksac.exe")
+    ENGINE_BINARY_PATH: str = resolve_engine_binary()
     MAX_CONCURRENT_WORKERS: int = int(os.getenv("MAX_CONCURRENT_WORKERS", "4"))
     JOB_TIMEOUT_SECONDS: float = float(os.getenv("JOB_TIMEOUT_SECONDS", "30.0"))
     MAX_QUEUE_SIZE: int = int(os.getenv("MAX_QUEUE_SIZE", "100"))

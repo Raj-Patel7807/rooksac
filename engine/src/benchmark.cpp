@@ -93,7 +93,7 @@ BenchmarkReport runBenchmark(
                 std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count());
 
             repNodes.push_back(res.stats.nodes);
-            repTimesMs.push_back(std::max(1ULL, elapsedMs));
+            repTimesMs.push_back(std::max<std::uint64_t>(1ULL, elapsedMs));
 
             if (r == 0) {
                 bestMoveStr = res.bestMove.has_value() ? uci::formatMove(*res.bestMove) : "none";
