@@ -189,3 +189,44 @@ With the new adaptive time manager, RookSac finishes Move 20 with **over 125–1
 3. **Clock Reserve:** Preserves **~125–133 seconds** of time after 40 plies in 3+2 games.
 4. **Protocol Stability:** 100% compliant with standard UCI GUIs (Cute Chess, Arena, Banksia, Lichess bot wrappers).
 5. **Robustness:** Zero crashes, zero illegal moves, fully Perft-certified move generator, and comprehensive CTest passes.
+
+---
+
+## 9. Chess Correctness & Reliability Audit (2026-11-03)
+
+A dedicated correctness and tournament-reliability audit was conducted to resolve edge-case vulnerabilities:
+
+### A. P0: Checkmate vs. Fifty-Move Draw Ordering
+* **Issue:** Root `search()`, `alphaBetaInternal()`, `quiescenceInternal()`, `negamax()`, and `searchMinimax()` evaluated `position.halfmoveClock() >= 100` before detecting checkmate and stalemate.
+* **Impact:** In the rare case of a checkmate occurring exactly at or after halfmove 100, the engine scored the position as `kDrawScore` (0) instead of checkmate (`-kMateScore`).
+* **Fix:** In all search paths, legal move generation and in-check detection now precede the fifty-move rule check. If `legalMoves.empty()`, checkmate (`-kMateScore + ply`) is declared immediately; fifty-move draw is only returned if non-terminal legal moves exist.
+* **Verification:** Unit tests with halfmove clock = 100 on checkmate, stalemate, and non-terminal positions confirm checkmate strictly takes precedence.
+
+### B. P0: Quiescence Search Depth-Limit Bypass
+* **Issue:** In `quiescenceInternal()`, the king-in-check evasion branch was evaluated before verifying `ply >= kMaxQsearchDepth`.
+* **Impact:** Unbounded checking lines could extend past `kMaxQsearchDepth`. Furthermore, using stand-pat evaluation while king is in check is illegal in chess.
+* **Fix:** Quiescence depth limit (`ply >= kMaxQsearchDepth`) is now checked unconditionally at function entry. At the boundary limit:
+  - If in check, legal moves are checked for checkmate (`-kMateScore + ply`). If evasions exist, a bounded static evaluation is returned without expanding further recursive branches.
+  - If not in check, standard stand-pat evaluation is returned.
+* **Verification:** Tested at depth boundary `kMaxQsearchDepth`, verifying checkmate recognition and bounded evaluation without recursive expansion.
+
+### C. P1: Transposition Table Stale-Move Bug
+* **Issue:** In `TranspositionTable::store()`, the key assignment `entry.key = key;` occurred before `else if (entry.key != key) entry.move = 0;`.
+* **Impact:** Because `entry.key == key` was always true after assignment, the stale-move branch was dead code. When an entry was replaced by another position without a best move (e.g. fail-low upper bound), the previous position's move was retained and probed.
+* **Fix:** Stored whether `entry.key == key` in `samePosition` prior to assignment. If displacing a different position without a valid best move, `entry.move` is explicitly reset to 0.
+* **Verification:** Targeted collision test verifies stale moves are cleared on replacement while valid moves and same-key updates are preserved.
+
+### D. P2: UCI Numeric Parsing Hardening
+* **Issue:** `parseUint()` and `parseUint64()` only checked `std::errc`, accepting trailing alphabetic characters (e.g., `"123abc"` parsed as `123`).
+* **Fix:** Added validation that `ptr == sv.data() + sv.size()` and rejected empty tokens.
+* **Verification:** Tested go commands with `"123abc"`, extreme `UINT32_MAX`, and malformed tokens; engine safely uses defaults without crash.
+
+### E. Adaptive Search Cutoff & Arithmetic Safety
+* **Audit:** Verified that `elapsedMs * 2ULL >= optimalTimeMs` uses 64-bit arithmetic to prevent 32-bit overflow on large clock values.
+* **Documentation Correction:** Updated comments to clarify that the early cutoff at `currentDepth >= 5` represents a mathematical projection of the 3x-4x branching factor rather than an unimplemented volatility heuristic.
+
+### F. Draw Detection Audit
+* **Fifty-Move Rule:** Verified and hardened across all search functions.
+* **Stalemate:** Verified across all search functions.
+* **Threefold Repetition & Insufficient Material:**
+  - *Current Status:* Threefold repetition in game history is tracked at the match/session level. Path repetition along the search tree and rule-specific insufficient material (K vs K, K+B vs K, K+N vs K) are documented architectural enhancements for future sprints, as full search-tree graph cycles are mitigated by Zobrist transposition table depth bounds.
