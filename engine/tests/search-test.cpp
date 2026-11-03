@@ -74,17 +74,24 @@ std::int32_t referenceMinimax(
 }
 
 void testTerminalScoresAndDraws() {
-    // 1. Stalemate position: Black king on a8 has no moves, not in check.
+    search::SearchLimits limits(2);
+
+    // 1. Stalemate position: Black king on a8 has no moves, not in check (halfmove = 0).
     auto staleOpt = Position::fromFen("k7/2Q5/2K5/8/8/8/8/8 b - - 0 1");
     require(staleOpt.hasValue(), "Stalemate FEN parses");
     auto stalePos = *staleOpt;
-
-    search::SearchLimits limits(2);
     auto staleRes = search::search(stalePos, limits);
     require(!staleRes.bestMove.has_value(), "Stalemate returns nullopt move");
     require(staleRes.score == search::kDrawScore, "Stalemate returns 0 score");
 
-    // 2. Fifty-move draw rule: halfmove clock >= 100
+    // 2. Stalemate with halfmove clock == 100
+    auto stale50Opt = Position::fromFen("k7/2Q5/2K5/8/8/8/8/8 b - - 100 50");
+    require(stale50Opt.hasValue(), "Stalemate with halfmove=100 FEN parses");
+    auto stale50Res = search::search(*stale50Opt, limits);
+    require(!stale50Res.bestMove.has_value(), "Stalemate with halfmove=100 returns nullopt move");
+    require(stale50Res.score == search::kDrawScore, "Stalemate with halfmove=100 returns draw score");
+
+    // 3. Fifty-move draw rule: halfmove clock >= 100, non-terminal legal moves exist
     auto fiftyOpt = Position::fromFen("4k3/8/8/8/8/8/8/4K3 w - - 100 50");
     require(fiftyOpt.hasValue(), "Fifty-move FEN parses");
     auto fiftyPos = *fiftyOpt;
@@ -92,13 +99,27 @@ void testTerminalScoresAndDraws() {
     require(!fiftyRes.bestMove.has_value(), "Fifty move draw at root returns nullopt move");
     require(fiftyRes.score == search::kDrawScore, "Fifty move draw returns 0 score");
 
-    // 3. Checkmate at root: Black king on h8 checkmated by Qh7# with Kg6
+    // 4. Normal position below 50-move threshold (halfmove = 99, White can move)
+    auto sub50Opt = Position::fromFen("4k3/8/8/8/8/8/8/4K3 w - - 99 50");
+    require(sub50Opt.hasValue(), "Sub-50 move FEN parses");
+    auto sub50Res = search::search(*sub50Opt, limits);
+    require(sub50Res.bestMove.has_value(), "Sub-50 move returns valid best move");
+
+    // 5. Checkmate at root: Black king on h8 checkmated by Qh7# with Kg6 (halfmove = 0)
     auto mateOpt = Position::fromFen("7k/7Q/6K1/8/8/8/8/8 b - - 0 1");
     require(mateOpt.hasValue(), "Checkmate FEN parses");
     auto matePos = *mateOpt;
     auto mateRes = search::search(matePos, limits);
     require(!mateRes.bestMove.has_value(), "Checkmated position at root returns nullopt move");
     require(mateRes.score == -search::kMateScore, "Checkmated position at root scores -kMateScore");
+
+    // 6. Checkmate with halfmove clock == 100 (CRITICAL REGRESSION: checkmate takes precedence over 50-move rule)
+    auto mate50Opt = Position::fromFen("7k/7Q/6K1/8/8/8/8/8 b - - 100 50");
+    require(mate50Opt.hasValue(), "Checkmate with halfmove=100 FEN parses");
+    auto mate50Pos = *mate50Opt;
+    auto mate50Res = search::search(mate50Pos, limits);
+    require(!mate50Res.bestMove.has_value(), "Checkmated position with halfmove=100 returns nullopt move");
+    require(mate50Res.score == -search::kMateScore, "Checkmate MUST take precedence over 50-move draw (score == -kMateScore)");
 }
 
 void testMateInOneFixtures() {
@@ -427,6 +448,48 @@ void testQuiescenceTacticalHorizon() {
     // From Black's perspective after 1. Qxd5, stand-pat is -800 (down a queen).
     // By capturing the queen (1... cxd5), Black ends up up a pawn (+100).
     require(qscore == 100, "Quiescence search correctly captures the hung queen on d5, scoring +100");
+}
+
+
+void testQuiescenceDepthLimitAndCheckEvasions() {
+    search::SearchStats qstats;
+
+    // 1. Checkmate inside quiescence at ply >= kMaxQsearchDepth
+    auto mateOpt = Position::fromFen("7k/7Q/6K1/8/8/8/8/8 b - - 0 1");
+    require(mateOpt.hasValue(), "Mate FEN valid");
+    auto matePos = *mateOpt;
+    const std::int32_t mateAtLimit = search::quiescence(
+        matePos, -search::kInfinity, search::kInfinity, search::kMaxQsearchDepth, qstats,
+        [](const Position& p) { return eval::evaluateMaterialSideToMove(p); });
+    require(mateAtLimit == -search::kMateScore + static_cast<std::int32_t>(search::kMaxQsearchDepth),
+            "Quiescence recognizes checkmate even at max depth limit boundary");
+
+    // 2. Position in check at ply >= kMaxQsearchDepth with legal evasions available:
+    // Stand-pat must not be used, returns bounded evaluator score without endless recursion.
+    auto checkOpt = Position::fromFen("8/8/8/8/8/8/4r3/4K2k w - - 0 1");
+    require(checkOpt.hasValue(), "Check FEN valid");
+    auto checkPos = *checkOpt;
+    const std::uint64_t nodesBefore = qstats.nodes;
+    const std::int32_t boundScore = search::quiescence(
+        checkPos, -search::kInfinity, search::kInfinity, search::kMaxQsearchDepth, qstats,
+        [](const Position& p) { return eval::evaluateMaterialSideToMove(p); });
+    require(qstats.nodes == nodesBefore + 1, "At depth limit, quiescence terminates without recursive branches");
+    require(boundScore != search::kInfinity && boundScore != -search::kInfinity, "Bounded evaluation returned");
+
+    // 3. Deep checking sequence does not exceed kMaxQsearchDepth
+    qstats.nodes = 0;
+    qstats.maxDepth = 0;
+    static_cast<void>(search::quiescence(
+        checkPos, -search::kInfinity, search::kInfinity, search::kMaxQsearchDepth - 2, qstats,
+        [](const Position& p) { return eval::evaluateMaterialSideToMove(p); }));
+    require(qstats.maxDepth <= search::kMaxQsearchDepth + 1, "Quiescence search strictly adheres to max depth bound");
+
+    // 4. Verify position state invariant is preserved after quiescence check evasions
+    const std::string originalFen = checkPos.toFen();
+    static_cast<void>(search::quiescence(
+        checkPos, -search::kInfinity, search::kInfinity, 0, qstats,
+        [](const Position& p) { return eval::evaluateMaterialSideToMove(p); }));
+    require(checkPos.toFen() == originalFen, "Position FEN strictly preserved after full quiescence evasion search");
 }
 
 void testQuiescenceCheckHandling() {
@@ -841,6 +904,7 @@ int main() {
     testNegamaxAgentWrapper();
     testQuiescenceTacticalHorizon();
     testQuiescenceCheckHandling();
+    testQuiescenceDepthLimitAndCheckEvasions();
     testIterativeDeepeningAndFallbackMove();
     testCooperativeStopToken();
     testTimeManagerAllocation();

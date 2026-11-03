@@ -75,14 +75,38 @@ std::int32_t quiescenceInternal(
         return alpha;
     }
 
-    // 1. Terminal draw: 50-move rule check
+    const bool inCheck = movegen::isInCheck(position);
+
+    // 1. Quiescence depth limit: enforce unconditionally before any recursive search.
+    // If at the limit:
+    // - If in check, verify whether legal evasions exist to detect checkmate.
+    //   If evasions exist, return bounded static evaluation (stand-pat prohibited while in check).
+    // - If not in check, return stand-pat evaluation.
+    if (ply >= kMaxQsearchDepth) {
+        if (inCheck) {
+            MoveList evasions;
+            movegen::generateLegalMoves(position, evasions);
+            if (evasions.empty()) {
+                return -kMateScore + static_cast<std::int32_t>(ply);
+            }
+        }
+        return evaluator(position);
+    }
+
+    // 2. Terminal draw: 50-move rule check (mate takes precedence)
     if (position.halfmoveClock() >= 100) {
+        if (inCheck) {
+            MoveList evasions;
+            movegen::generateLegalMoves(position, evasions);
+            if (evasions.empty()) {
+                return -kMateScore + static_cast<std::int32_t>(ply);
+            }
+        }
         return kDrawScore;
     }
 
-    // 2. Check handling in quiescence:
+    // 3. Check handling in quiescence:
     // If king is in check, stand-pat is NOT permitted. All legal evasions must be searched.
-    const bool inCheck = movegen::isInCheck(position);
     if (inCheck) {
         MoveList evasions;
         movegen::generateLegalMoves(position, evasions);
@@ -120,18 +144,13 @@ std::int32_t quiescenceInternal(
         return bestScore;
     }
 
-    // 3. Not in check: Stand-pat (the side to move can choose not to capture)
+    // 4. Not in check: Stand-pat (the side to move can choose not to capture)
     const std::int32_t standPat = evaluator(position);
     if (standPat >= beta) {
         return standPat;
     }
     if (standPat > alpha) {
         alpha = standPat;
-    }
-
-    // 4. Maximum quiescence search depth limit safeguard
-    if (ply >= kMaxQsearchDepth) {
-        return standPat;
     }
 
     // 5. Generate and search only captures and promotions
@@ -192,12 +211,7 @@ std::int32_t alphaBetaInternal(
         return alpha;
     }
 
-    // 1. Terminal draw: 50-move rule check
-    if (position.halfmoveClock() >= 100) {
-        return kDrawScore;
-    }
-
-    // 2. Transposition table probe
+    // 1. Transposition table probe
     const std::uint64_t hash = position.zobristHash();
     std::optional<Move> ttMove = std::nullopt;
     if (context && context->ttable) {
@@ -224,7 +238,7 @@ std::int32_t alphaBetaInternal(
         }
     }
 
-    // 3. Generate legal moves to detect terminal conditions
+    // 2. Generate legal moves to detect terminal conditions
     MoveList legalMoves;
     movegen::generateLegalMoves(position, legalMoves);
 
@@ -232,6 +246,11 @@ std::int32_t alphaBetaInternal(
         if (movegen::isInCheck(position)) {
             return -kMateScore + static_cast<std::int32_t>(ply);
         }
+        return kDrawScore;
+    }
+
+    // 3. Terminal draw: 50-move rule check (mate takes precedence)
+    if (position.halfmoveClock() >= 100) {
         return kDrawScore;
     }
 
@@ -410,10 +429,6 @@ std::int32_t negamax(
         stats.maxDepth = ply;
     }
 
-    if (position.halfmoveClock() >= 100) {
-        return kDrawScore;
-    }
-
     MoveList legalMoves;
     movegen::generateLegalMoves(position, legalMoves);
 
@@ -421,6 +436,10 @@ std::int32_t negamax(
         if (movegen::isInCheck(position)) {
             return -kMateScore + static_cast<std::int32_t>(ply);
         }
+        return kDrawScore;
+    }
+
+    if (position.halfmoveClock() >= 100) {
         return kDrawScore;
     }
 
@@ -471,12 +490,6 @@ SearchResult searchMinimax(
         return result;
     }
 
-    if (position.halfmoveClock() >= 100) {
-        result.score    = kDrawScore;
-        result.bestMove = std::nullopt;
-        return result;
-    }
-
     MoveList legalMoves;
     movegen::generateLegalMoves(position, legalMoves);
 
@@ -486,6 +499,12 @@ SearchResult searchMinimax(
         } else {
             result.score = kDrawScore;
         }
+        result.bestMove = std::nullopt;
+        return result;
+    }
+
+    if (position.halfmoveClock() >= 100) {
+        result.score    = kDrawScore;
         result.bestMove = std::nullopt;
         return result;
     }
@@ -560,12 +579,6 @@ SearchResult search(
     lastCompletedResult.stats.maxDepth = 0;
     lastCompletedResult.stats.cutoffs  = 0;
 
-    if (position.halfmoveClock() >= 100) {
-        lastCompletedResult.score    = kDrawScore;
-        lastCompletedResult.bestMove = std::nullopt;
-        return lastCompletedResult;
-    }
-
     MoveList legalMoves;
     movegen::generateLegalMoves(position, legalMoves);
 
@@ -575,6 +588,12 @@ SearchResult search(
         } else {
             lastCompletedResult.score = kDrawScore;
         }
+        lastCompletedResult.bestMove = std::nullopt;
+        return lastCompletedResult;
+    }
+
+    if (position.halfmoveClock() >= 100) {
+        lastCompletedResult.score    = kDrawScore;
         lastCompletedResult.bestMove = std::nullopt;
         return lastCompletedResult;
     }
@@ -716,16 +735,16 @@ SearchResult search(
         // In game-tree search, each subsequent depth typically takes 3x to 4x the cumulative
         // time spent so far (the effective branching factor).
         // If elapsedMs exceeds optimalTimeMs, or if elapsedMs is already more than 50% of optimalTimeMs
-        // (making it mathematically improbable that the next depth will finish before optimalTimeMs),
-        // we break to preserve clock unless this move proved to be volatile or we are still at low depth (depth < 5).
+        // at depth >= 5 (making it mathematically improbable that the next depth will finish before optimalTimeMs),
+        // we break to preserve clock. Arithmetic uses uint64_t to prevent overflow on large elapsed values.
         if (optimalTimeMs.has_value()) {
-            const auto elapsedMs = static_cast<std::uint32_t>(
+            const auto elapsedMs = static_cast<std::uint64_t>(
                 std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::steady_clock::now() - context.startTime).count());
             if (elapsedMs >= *optimalTimeMs) {
                 break;
             }
-            if (currentDepth >= 5 && elapsedMs * 2U >= *optimalTimeMs) {
+            if (currentDepth >= 5 && elapsedMs * 2ULL >= static_cast<std::uint64_t>(*optimalTimeMs)) {
                 break;
             }
         }
