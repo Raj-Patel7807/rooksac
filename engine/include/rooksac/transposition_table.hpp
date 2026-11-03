@@ -50,7 +50,7 @@ struct ProbeResult {
 /// \brief Fixed-size memory-bounded Transposition Table.
 class TranspositionTable {
 public:
-    static constexpr std::size_t kDefaultSizeBytes = 16 * 1024 * 1024;  ///< Default 16 MB
+    static constexpr std::size_t kDefaultSizeBytes = 64 * 1024 * 1024;  ///< Default 64 MB
     static constexpr std::size_t kMinSizeBytes = 1024 * 1024;           ///< Minimum 1 MB
     static constexpr std::size_t kMaxSizeBytes = 1024ULL * 1024 * 1024; ///< Maximum 1024 MB
 

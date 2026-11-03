@@ -201,7 +201,7 @@ bool EngineSession::processCommand(std::string_view line) {
 void EngineSession::handleUci() {
     out_ << "id name RookSac 0.1.0\n";
     out_ << "id author RookSac Authors\n";
-    out_ << "option name Hash type spin default 16 min 1 max 1024\n";
+    out_ << "option name Hash type spin default 64 min 1 max 1024\n";
     out_ << "uciok\n";
     out_.flush();
 }

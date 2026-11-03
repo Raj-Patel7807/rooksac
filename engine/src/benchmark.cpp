@@ -63,8 +63,8 @@ BenchmarkReport runBenchmark(
     report.buildType = "Debug";
 #endif
 
-    // Pre-allocate a 16MB transposition table for benchmark runs
-    tt::TranspositionTable ttable(16);
+    // Pre-allocate a transposition table using the default size for benchmark runs
+    tt::TranspositionTable ttable(tt::TranspositionTable::kDefaultSizeBytes);
 
     for (const auto& item : positions) {
         const std::uint32_t targetDepth = (item.depth > 0) ? item.depth : defaultDepth;
