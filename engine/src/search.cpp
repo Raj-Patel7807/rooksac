@@ -33,6 +33,39 @@ struct SearchContext {
     // Active search options for this invocation.
     SearchOptions options;
 
+    // Search-path position history for repetition detection.
+    // Stack-allocated array of Zobrist keys along the current search branch.
+    static constexpr std::size_t kMaxPathPlies = 256;
+    std::array<std::uint64_t, kMaxPathPlies> historyPath{};
+    std::size_t historyLen = 0;
+
+    void pushKey(std::uint64_t key) noexcept {
+        if (historyLen < kMaxPathPlies) {
+            historyPath[historyLen++] = key;
+        }
+    }
+
+    void popKey() noexcept {
+        if (historyLen > 0) {
+            --historyLen;
+        }
+    }
+
+    [[nodiscard]] bool isRepetition(std::uint64_t key, std::uint32_t halfmoveClock) const noexcept {
+        if (historyLen == 0 || halfmoveClock < 2) {
+            return false;
+        }
+        // Positions can only repeat every 2 plies (same side to move).
+        // The halfmove clock bounds how far back irreversible moves occurred.
+        const std::size_t maxLookback = std::min(historyLen, static_cast<std::size_t>(halfmoveClock));
+        for (std::size_t i = 2; i <= maxLookback; i += 2) {
+            if (historyPath[historyLen - i] == key) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     [[nodiscard]] bool checkStop(std::uint64_t currentNodes) noexcept {
         if (aborted) {
             return true;
@@ -80,7 +113,8 @@ std::int32_t quiescenceInternal(
     // 1. Quiescence depth limit: enforce unconditionally before any recursive search.
     // If at the limit:
     // - If in check, verify whether legal evasions exist to detect checkmate.
-    //   If evasions exist, return bounded static evaluation (stand-pat prohibited while in check).
+    //   If evasions exist, search depth-1 evasions to evaluate legitimate post-evasion
+    //   leaves, penalizing the checking pressure rather than taking an unevaded stand-pat.
     // - If not in check, return stand-pat evaluation.
     if (ply >= kMaxQsearchDepth) {
         if (inCheck) {
@@ -89,12 +123,32 @@ std::int32_t quiescenceInternal(
             if (evasions.empty()) {
                 return -kMateScore + static_cast<std::int32_t>(ply);
             }
+            orderMoves(position, evasions);
+            std::int32_t bestEvasionScore = -kInfinity;
+            for (std::size_t i = 0; i < evasions.size(); ++i) {
+                const Move m = evasions[i];
+                UndoState undo;
+                (void)position.makeMove(m, undo);
+                // Directly evaluate the leaf reached after the forced evasion
+                const std::int32_t evasionScore = -evaluator(position);
+                position.unmakeMove(m, undo);
+                if (evasionScore > bestEvasionScore) {
+                    bestEvasionScore = evasionScore;
+                }
+                if (bestEvasionScore > alpha) {
+                    alpha = bestEvasionScore;
+                }
+                if (alpha >= beta) {
+                    break;
+                }
+            }
+            return bestEvasionScore;
         }
         return evaluator(position);
     }
 
-    // 2. Terminal draw: 50-move rule check (mate takes precedence)
-    if (position.halfmoveClock() >= 100) {
+    // 2. Terminal draw: 50-move rule and insufficient material (checkmate takes precedence)
+    if (position.halfmoveClock() >= 100 || eval::hasInsufficientMaterial(position)) {
         if (inCheck) {
             MoveList evasions;
             movegen::generateLegalMoves(position, evasions);
@@ -211,8 +265,14 @@ std::int32_t alphaBetaInternal(
         return alpha;
     }
 
-    // 1. Transposition table probe
     const std::uint64_t hash = position.zobristHash();
+
+    // 1. Search-path repetition check (non-root nodes)
+    if (ply > 0 && context && context->isRepetition(hash, position.halfmoveClock())) {
+        return kDrawScore;
+    }
+
+    // 2. Transposition table probe
     std::optional<Move> ttMove = std::nullopt;
     if (context && context->ttable) {
         const auto ttProbe = context->ttable->probe(hash, ply);
@@ -249,8 +309,8 @@ std::int32_t alphaBetaInternal(
         return kDrawScore;
     }
 
-    // 3. Terminal draw: 50-move rule check (mate takes precedence)
-    if (position.halfmoveClock() >= 100) {
+    // 3. Terminal draw: 50-move rule and insufficient material check (mate takes precedence)
+    if (position.halfmoveClock() >= 100 || eval::hasInsufficientMaterial(position)) {
         return kDrawScore;
     }
 
@@ -318,6 +378,9 @@ std::int32_t alphaBetaInternal(
         const Move m = legalMoves[i];
         UndoState undo;
         (void)position.makeMove(m, undo);
+        if (context) {
+            context->pushKey(position.zobristHash());
+        }
 
         const bool isCapture = (m.promotion() != PieceType::None) || [&]() {
             return undo.capturedPiece != Piece::None;
@@ -439,7 +502,7 @@ std::int32_t negamax(
         return kDrawScore;
     }
 
-    if (position.halfmoveClock() >= 100) {
+    if (position.halfmoveClock() >= 100 || eval::hasInsufficientMaterial(position)) {
         return kDrawScore;
     }
 
@@ -503,7 +566,7 @@ SearchResult searchMinimax(
         return result;
     }
 
-    if (position.halfmoveClock() >= 100) {
+    if (position.halfmoveClock() >= 100 || eval::hasInsufficientMaterial(position)) {
         result.score    = kDrawScore;
         result.bestMove = std::nullopt;
         return result;
@@ -574,6 +637,9 @@ SearchResult search(
         context.deadline = context.startTime + std::chrono::milliseconds(alloc.maximumTimeMs);
     }
 
+    // Initialize root position in search history path
+    context.pushKey(position.zobristHash());
+
     SearchResult lastCompletedResult;
     lastCompletedResult.stats.nodes    = 1;  // Root node visited
     lastCompletedResult.stats.maxDepth = 0;
@@ -595,6 +661,13 @@ SearchResult search(
     if (position.halfmoveClock() >= 100) {
         lastCompletedResult.score    = kDrawScore;
         lastCompletedResult.bestMove = std::nullopt;
+        return lastCompletedResult;
+    }
+
+    if (eval::hasInsufficientMaterial(position)) {
+        lastCompletedResult.score    = kDrawScore;
+        lastCompletedResult.bestMove = legalMoves[0];
+        lastCompletedResult.completedDepth = 1;
         return lastCompletedResult;
     }
 
@@ -652,8 +725,10 @@ SearchResult search(
                 const Move m = legalMoves[i];
                 UndoState undo;
                 (void)position.makeMove(m, undo);
+                context.pushKey(position.zobristHash());
                 const std::int32_t score = -alphaBetaInternal(
                     position, -beta, -alpha, currentDepth - 1, 1, lastCompletedResult.stats, evaluator, &context);
+                context.popKey();
                 position.unmakeMove(m, undo);
 
                 if (context.aborted) {

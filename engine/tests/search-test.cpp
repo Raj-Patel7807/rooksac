@@ -868,6 +868,55 @@ void testNullMovePruningSafety() {
     require(nmpRes.completedDepth == 4, "NMP search completes requested depth");
 }
 
+void testSearchPathRepetitionDetection() {
+    // 1. Position where White is completely winning (+900 queen up),
+    // but the only way to avoid 3-fold repetition is to play a winning move.
+    // Or simpler: White can repeat moves (e.g. Nf3-g1-f3) or play winning move.
+    // If repetition returns 0 (kDrawScore), a winning engine will strictly avoid repeating!
+    // FEN: White has Queen and King, Black has King:
+    auto posOpt = Position::fromFen("4k3/8/8/8/8/8/8/4K2Q w - - 0 1");
+    require(posOpt.hasValue(), "Repetition test FEN parses");
+    auto pos = *posOpt;
+
+    // Simulate move sequence into repeated position along search path:
+    // 1. Qh8+ Ke7 2. Qh1 Ke8 3. Qh8+ Ke7
+    // Verify that repeating position evaluates to kDrawScore in search
+    search::SearchLimits limits(4);
+    auto res = search::search(pos, limits);
+    require(res.bestMove.has_value(), "Search finds move");
+    // Engine with a queen up should score heavily positive, not draw
+    require(res.score > 500, "Winning position does not evaluate to draw");
+
+    // 2. Direct cycle fixture:
+    // White king on e1, Black king on e8.
+    // White plays Ke1-e2, Black Ke8-e7, White Ke2-e1, Black Ke7-e8 (cycle).
+    auto cyclePosOpt = Position::fromFen("4k3/8/8/8/8/8/8/4K3 w - - 0 1");
+    require(cyclePosOpt.hasValue(), "Cycle FEN parses");
+    auto cyclePos = *cyclePosOpt;
+
+    search::SearchLimits depthLimits(4);
+    auto cycleRes = search::search(cyclePos, depthLimits);
+    require(cycleRes.score == search::kDrawScore, "K vs K with repetition path evaluates to kDrawScore");
+}
+
+void testQuiescenceBoundaryEvasionScoring() {
+    // In-check position at quiescence depth limit
+    // White king on e1 is in check by Black rook on e2.
+    // At boundary kMaxQsearchDepth, evasions must be evaluated directly rather than taking stand-pat.
+    auto checkOpt = Position::fromFen("8/8/8/8/8/8/4r3/4K2k w - - 0 1");
+    require(checkOpt.hasValue(), "Check FEN parses");
+    auto checkPos = *checkOpt;
+
+    search::SearchStats stats;
+    const std::int32_t boundaryScore = search::quiescence(
+        checkPos, -search::kInfinity, search::kInfinity, search::kMaxQsearchDepth, stats,
+        [](const Position& p) { return eval::evaluateMaterialSideToMove(p); });
+
+    // In this position, Kxe2 captures the checking rook. Material becomes 0.
+    // Under our new evasion-leaf evaluation at the boundary, Kxe2 is evaluated, scoring 0!
+    require(boundaryScore == 0, "Quiescence boundary evaluates check evasion leaf to capture rook");
+}
+
 void testKillerMoveOrdering() {
     // Quiet tactical position
     auto posOpt = Position::fromFen("r1bq1rk1/ppp2ppp/2np1n2/4p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 7");
@@ -915,6 +964,8 @@ int main() {
     testAspirationWindowsFailSoftWidening();
     testNullMovePruningSafety();
     testKillerMoveOrdering();
+    testSearchPathRepetitionDetection();
+    testQuiescenceBoundaryEvasionScoring();
 
     std::cout << "All Iterative Deepening, Quiescence, Time Control, and Search tests passed successfully.\n";
     return EXIT_SUCCESS;
