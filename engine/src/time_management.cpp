@@ -56,7 +56,7 @@ TimeAllocation TimeManager::allocate(
 
     // 5. Standard clock allocation
     const std::uint64_t divisor64 = tc.movesToGo.has_value()
-        ? std::max(1ULL, static_cast<std::uint64_t>(*tc.movesToGo))
+        ? std::max<std::uint64_t>(1ULL, static_cast<std::uint64_t>(*tc.movesToGo))
         : static_cast<std::uint64_t>(kDefaultExpectedMoves);
 
     const std::uint64_t baseTime64 = usable64 / divisor64;
@@ -68,7 +68,7 @@ TimeAllocation TimeManager::allocate(
     // Use 64-bit intermediate arithmetic throughout to prevent overflow.
     const std::uint64_t rawIncBonus64 = (increment64 * 3ULL) / 4ULL;
     const std::uint64_t incCap64 = remaining64 / 10ULL;
-    const std::uint64_t incBonus64 = std::min(rawIncBonus64, incCap64);
+    const std::uint64_t incBonus64 = std::min<std::uint64_t>(rawIncBonus64, incCap64);
 
     // In 32-bit math, baseTime + incBonus can overflow UINT32_MAX when remaining time
     // is large (e.g. 4 billion ms with movesToGo = 1).
