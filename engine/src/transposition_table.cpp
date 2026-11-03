@@ -112,10 +112,15 @@ void TranspositionTable::store(
         return;
     }
 
+    // Save whether the incoming key matches the existing slot key BEFORE overwriting.
+    // After entry.key = key the comparison entry.key != key is always false, so the
+    // stale-move guard must be evaluated first.
+    const bool samePosition = (entry.key == key);
     entry.key = key;
     if (bestMove.has_value()) {
         entry.move = bestMove->encoded();
-    } else if (entry.key != key) {
+    } else if (!samePosition) {
+        // Different position is displacing this slot: clear any stale move from the prior entry.
         entry.move = 0;
     }
 

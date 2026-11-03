@@ -169,6 +169,45 @@ void testSearchConsistencyWithAndWithoutTT() {
 
 }  // namespace
 
+
+void testStaleMoveClearedOnReplacement() {
+    tt::TranspositionTable table(1024 * 1024);
+
+    const std::uint64_t keyA = 0xAAAAAAAAAAAAAAAAULL;
+    auto moveA = Move::create(Square::E2, Square::E4);
+    auto moveB = Move::create(Square::D2, Square::D4);
+    require(moveA.has_value() && moveB.has_value(), "Valid test moves");
+
+    // 1. Storing keyA with a move should save moveA
+    table.store(keyA, /*ply=*/0, /*depth=*/2, /*score=*/100, tt::Bound::Exact, moveA);
+    auto probeA1 = table.probe(keyA, /*ply=*/0);
+    require(probeA1.hit && probeA1.move.has_value() && probeA1.move->encoded() == moveA->encoded(),
+            "Key A holds move A");
+
+    // 2. Overwriting slot with collisionKey with NO bestMove (e.g. fail-low) must NOT retain moveA
+    const std::size_t count = (1024 * 1024) / sizeof(tt::Entry);
+    const std::uint64_t collisionKey = keyA + static_cast<std::uint64_t>(count);
+
+    // Store collisionKey with greater depth (depth 4 > depth 2) to trigger replacement, but with nullopt move
+    table.store(collisionKey, /*ply=*/0, /*depth=*/4, /*score=*/50, tt::Bound::Upper, std::nullopt);
+
+    auto probeCollision = table.probe(collisionKey, /*ply=*/0);
+    require(probeCollision.hit, "Collision key hits TT");
+    require(!probeCollision.move.has_value(), "Stale move from keyA must be cleared on replacement!");
+
+    // 3. Storing collisionKey again at higher depth with moveB sets moveB
+    table.store(collisionKey, /*ply=*/0, /*depth=*/5, /*score=*/60, tt::Bound::Exact, moveB);
+    auto probeCollision2 = table.probe(collisionKey, /*ply=*/0);
+    require(probeCollision2.hit && probeCollision2.move.has_value(), "Move B recorded");
+    require(probeCollision2.move->encoded() == moveB->encoded(), "Move B matches");
+
+    // 4. Storing same key (collisionKey) again without a new move (nullopt) PRESERVES existing move
+    table.store(collisionKey, /*ply=*/0, /*depth=*/6, /*score=*/70, tt::Bound::Lower, std::nullopt);
+    auto probeCollision3 = table.probe(collisionKey, /*ply=*/0);
+    require(probeCollision3.hit && probeCollision3.move.has_value(), "Same key preserves existing move");
+    require(probeCollision3.move->encoded() == moveB->encoded(), "Preserved move is still Move B");
+}
+
 int main() {
     testZobristIncrementalVsRecomputed();
     testDistinctKeysForStateDifferences();
@@ -176,5 +215,7 @@ int main() {
     testSearchConsistencyWithAndWithoutTT();
 
     std::cout << "All Zobrist hashing and Transposition Table tests passed successfully.\n";
+    testStaleMoveClearedOnReplacement();
+
     return 0;
 }
