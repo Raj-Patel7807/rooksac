@@ -43,8 +43,10 @@ TimeAllocation TimeManager::allocate(
     // - We spend at most 30% of the usable clock (leaving 70% of usable + 100ms reserve).
     // - NO increment bonus is credited, because the increment is only awarded AFTER
     //   the move is legally transmitted and accepted by the arbiter.
+    // - Checked 64-bit arithmetic prevents uint32_t overflow on extreme values.
     if (remaining <= emergencyThresholdMs) {
-        const std::uint32_t emergencyTime = std::max(kMinMoveTimeMs, (usable * 3U) / 10U);
+        const auto emergencyTime = static_cast<std::uint32_t>(
+            std::max<std::uint64_t>(kMinMoveTimeMs, (static_cast<std::uint64_t>(usable) * 3ULL) / 10ULL));
         allocation.optimalTimeMs = emergencyTime;
         allocation.maximumTimeMs = emergencyTime;
         return allocation;
@@ -61,7 +63,8 @@ TimeAllocation TimeManager::allocate(
     // Capping at remaining / 10 ensures that on low-ish clocks (e.g. 2s - 5s),
     // a large increment (e.g. 2000 ms) cannot single-handedly cause an overspend
     // before that increment is actually in hand.
-    const std::uint32_t rawIncBonus = (increment * 3U) / 4U;
+    // Use 64-bit intermediate arithmetic to prevent overflow when increment is large.
+    const auto rawIncBonus = static_cast<std::uint32_t>((static_cast<std::uint64_t>(increment) * 3ULL) / 4ULL);
     const std::uint32_t incCap = remaining / 10U;
     const std::uint32_t incBonus = std::min(rawIncBonus, incCap);
 
@@ -71,7 +74,9 @@ TimeAllocation TimeManager::allocate(
     //   Cap A: 2x optimal (allows reasonable overtime on complex positions)
     //   Cap B: 20% of remaining time (strict ceiling to prevent spending too much on one move)
     //   Cap C: usable clock (strictly remaining - kHardReserveMs)
-    const std::uint32_t capByOptimal = optimal * 2U;
+    // Use 64-bit intermediate for capByOptimal to prevent overflow on very large optimal values.
+    const auto capByOptimal = static_cast<std::uint32_t>(
+        std::min<std::uint64_t>(static_cast<std::uint64_t>(optimal) * 2ULL, UINT32_MAX));
     const std::uint32_t capByRemain  = remaining / 5U;
     std::uint32_t maximum = std::min({usable, capByOptimal, capByRemain});
 

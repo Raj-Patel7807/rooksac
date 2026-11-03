@@ -584,6 +584,14 @@ SearchResult search(
     lastCompletedResult.score        = evaluator(position);
     lastCompletedResult.completedDepth = 0;
 
+    // Single legal move optimization:
+    // If there is only one legal move and we are in clock-managed play (optimalTimeMs set),
+    // return immediately without wasting clock on an inevitable move.
+    if (legalMoves.size() == 1U && optimalTimeMs.has_value()) {
+        lastCompletedResult.completedDepth = 1;
+        return lastCompletedResult;
+    }
+
     std::optional<Move> pvMove  = std::nullopt;
     const std::uint32_t maxDepth = std::clamp(limits.depth, 1U, 64U);
 
@@ -704,12 +712,20 @@ SearchResult search(
             ttable->store(position.zobristHash(), 0, currentDepth, iterationBestScore, tt::Bound::Exact, iterationBestMove);
         }
 
-        // If optimal thinking time reached, do not start next iteration
+        // Adaptive time management check:
+        // In game-tree search, each subsequent depth typically takes 3x to 4x the cumulative
+        // time spent so far (the effective branching factor).
+        // If elapsedMs exceeds optimalTimeMs, or if elapsedMs is already more than 50% of optimalTimeMs
+        // (making it mathematically improbable that the next depth will finish before optimalTimeMs),
+        // we break to preserve clock unless this move proved to be volatile or we are still at low depth (depth < 5).
         if (optimalTimeMs.has_value()) {
             const auto elapsedMs = static_cast<std::uint32_t>(
                 std::chrono::duration_cast<std::chrono::milliseconds>(
                     std::chrono::steady_clock::now() - context.startTime).count());
             if (elapsedMs >= *optimalTimeMs) {
+                break;
+            }
+            if (currentDepth >= 5 && elapsedMs * 2U >= *optimalTimeMs) {
                 break;
             }
         }

@@ -636,6 +636,42 @@ void testTimeManagerAllocation() {
         require(a.maximumTimeMs <= 3'600'000 / 5U, "Large clock honors 20% cap");
         require(a.maximumTimeMs + TimeManager::kHardReserveMs <= 3'600'000, "Large clock honors hard reserve");
     }
+
+    // 11. Extreme uint32_t values and arithmetic overflow protection
+    {
+        TimeControl tcMax;
+        tcMax.remainingTimeMs = UINT32_MAX;
+        tcMax.incrementMs = 60'000;
+        const TimeAllocation aMax = TimeManager::allocate(tcMax);
+        require(aMax.optimalTimeMs > 0, "UINT32_MAX clock produces positive optimal allocation");
+        require(aMax.maximumTimeMs >= aMax.optimalTimeMs, "UINT32_MAX max >= optimal");
+        require(aMax.maximumTimeMs <= tcMax.remainingTimeMs.value() / 5U, "UINT32_MAX honors 20% cap without overflow");
+
+        TimeControl tcHugeInc;
+        tcHugeInc.remainingTimeMs = 10'000;
+        tcHugeInc.incrementMs = UINT32_MAX;
+        const TimeAllocation aHugeInc = TimeManager::allocate(tcHugeInc);
+        require(aHugeInc.optimalTimeMs > 0, "Huge increment produces positive optimal");
+        require(aHugeInc.maximumTimeMs >= aHugeInc.optimalTimeMs, "Huge increment max >= optimal");
+        require(aHugeInc.maximumTimeMs <= 10'000 / 5U, "Huge increment strictly capped at 20% of 10s clock");
+    }
+}
+
+void testSingleLegalMoveFastExit() {
+    // White king on e1 with pawn on e2, black king on f3.
+    // The only legal move for white is e1-d2.
+    auto posOpt = Position::fromFen("8/8/8/8/8/5k2/4p3/4K3 w - - 0 1");
+    require(posOpt.hasValue(), "Single legal move FEN parses");
+    auto pos = *posOpt;
+
+    // When optimalTimeMs is provided, search returns depth 1 immediately without wasting clock
+    search::SearchLimits limits;
+    limits.timeAllocation = rooksac::TimeAllocation{5000, 10000};
+
+    auto res = search::search(pos, limits);
+    require(res.bestMove.has_value(), "Search finds single legal move");
+    require(res.bestMove->from() == Square::E1 && res.bestMove->to() == Square::D2, "Plays Kd2");
+    require(res.completedDepth == 1, "Completes immediately at depth 1");
 }
 
 void testSearchLimitsControls() {
@@ -778,6 +814,7 @@ int main() {
     testIterativeDeepeningAndFallbackMove();
     testCooperativeStopToken();
     testTimeManagerAllocation();
+    testSingleLegalMoveFastExit();
     testSearchLimitsControls();
     testIterativeDeepeningDeterminism();
     testSearchOptionsIsolation();
