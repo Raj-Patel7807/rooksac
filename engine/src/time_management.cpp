@@ -23,20 +23,20 @@ TimeAllocation TimeManager::allocate(
         return allocation;
     }
 
-    const std::uint32_t remaining  = *tc.remainingTimeMs;
-    const std::uint32_t increment  = tc.incrementMs.value_or(0U);
+    const std::uint64_t remaining64 = *tc.remainingTimeMs;
+    const std::uint64_t increment64 = tc.incrementMs.value_or(0U);
 
     // 3. Hard floor: if remaining clock is at or below the hard reserve floor,
     // return minimum move time immediately.
     // This strictly preserves kHardReserveMs against OS scheduler jitter,
     // IPC/UCI latency, and search-stop polling intervals.
-    if (remaining <= kHardReserveMs) {
+    if (remaining64 <= kHardReserveMs) {
         allocation.optimalTimeMs = kMinMoveTimeMs;
         allocation.maximumTimeMs = kMinMoveTimeMs;
         return allocation;
     }
 
-    const std::uint32_t usable = remaining - kHardReserveMs;
+    const std::uint64_t usable64 = remaining64 - kHardReserveMs;
 
     // 4. Emergency low-time handling: triggers when remaining clock <= emergencyThresholdMs
     // (e.g. <= 1500 ms). In this regime:
@@ -44,50 +44,58 @@ TimeAllocation TimeManager::allocate(
     // - NO increment bonus is credited, because the increment is only awarded AFTER
     //   the move is legally transmitted and accepted by the arbiter.
     // - Checked 64-bit arithmetic prevents uint32_t overflow on extreme values.
-    if (remaining <= emergencyThresholdMs) {
+    if (remaining64 <= emergencyThresholdMs) {
+        const std::uint64_t emergencyTime64 = std::max<std::uint64_t>(
+            kMinMoveTimeMs, (usable64 * 3ULL) / 10ULL);
         const auto emergencyTime = static_cast<std::uint32_t>(
-            std::max<std::uint64_t>(kMinMoveTimeMs, (static_cast<std::uint64_t>(usable) * 3ULL) / 10ULL));
+            std::min<std::uint64_t>(emergencyTime64, usable64));
         allocation.optimalTimeMs = emergencyTime;
         allocation.maximumTimeMs = emergencyTime;
         return allocation;
     }
 
     // 5. Standard clock allocation
-    const std::uint32_t divisor = tc.movesToGo.has_value()
-        ? std::max(1U, *tc.movesToGo)
-        : kDefaultExpectedMoves;
+    const std::uint64_t divisor64 = tc.movesToGo.has_value()
+        ? std::max(1ULL, static_cast<std::uint64_t>(*tc.movesToGo))
+        : static_cast<std::uint64_t>(kDefaultExpectedMoves);
 
-    const std::uint32_t baseTime = usable / divisor;
+    const std::uint64_t baseTime64 = usable64 / divisor64;
 
     // Increment bonus: 75% of increment, capped at 10% of remaining clock.
     // Capping at remaining / 10 ensures that on low-ish clocks (e.g. 2s - 5s),
     // a large increment (e.g. 2000 ms) cannot single-handedly cause an overspend
     // before that increment is actually in hand.
-    // Use 64-bit intermediate arithmetic to prevent overflow when increment is large.
-    const auto rawIncBonus = static_cast<std::uint32_t>((static_cast<std::uint64_t>(increment) * 3ULL) / 4ULL);
-    const std::uint32_t incCap = remaining / 10U;
-    const std::uint32_t incBonus = std::min(rawIncBonus, incCap);
+    // Use 64-bit intermediate arithmetic throughout to prevent overflow.
+    const std::uint64_t rawIncBonus64 = (increment64 * 3ULL) / 4ULL;
+    const std::uint64_t incCap64 = remaining64 / 10ULL;
+    const std::uint64_t incBonus64 = std::min(rawIncBonus64, incCap64);
 
-    std::uint32_t optimal = baseTime + incBonus;
+    // In 32-bit math, baseTime + incBonus can overflow UINT32_MAX when remaining time
+    // is large (e.g. 4 billion ms with movesToGo = 1).
+    // Using 64-bit addition guarantees exact arithmetic without wraparound.
+    const std::uint64_t optimal64 = baseTime64 + incBonus64;
 
-    // Maximum thinking time caps:
+    // Maximum thinking time caps in 64-bit space:
     //   Cap A: 2x optimal (allows reasonable overtime on complex positions)
     //   Cap B: 20% of remaining time (strict ceiling to prevent spending too much on one move)
     //   Cap C: usable clock (strictly remaining - kHardReserveMs)
-    // Use 64-bit intermediate for capByOptimal to prevent overflow on very large optimal values.
-    const auto capByOptimal = static_cast<std::uint32_t>(
-        std::min<std::uint64_t>(static_cast<std::uint64_t>(optimal) * 2ULL, UINT32_MAX));
-    const std::uint32_t capByRemain  = remaining / 5U;
-    std::uint32_t maximum = std::min({usable, capByOptimal, capByRemain});
+    const std::uint64_t capByOptimal64 = optimal64 * 2ULL;
+    const std::uint64_t capByRemain64  = remaining64 / 5ULL;
+    std::uint64_t maximum64 = std::min({usable64, capByOptimal64, capByRemain64});
 
     // Invariant resolution:
     // If optimal exceeds maximum due to caps or integer arithmetic, clamp optimal down to maximum.
     // Never allow maximum = std::max(maximum, optimal) to override the 20% safety ceiling!
-    if (optimal > maximum) {
-        optimal = maximum;
+    std::uint64_t boundedOptimal64 = optimal64;
+    if (boundedOptimal64 > maximum64) {
+        boundedOptimal64 = maximum64;
     }
-    optimal = std::max(kMinMoveTimeMs, optimal);
-    maximum = std::max(optimal, maximum);
+    boundedOptimal64 = std::max<std::uint64_t>(kMinMoveTimeMs, boundedOptimal64);
+    maximum64 = std::max<std::uint64_t>(boundedOptimal64, maximum64);
+
+    // Final bounded conversion to uint32_t (clamping to UINT32_MAX though maximum64 <= remaining64 <= UINT32_MAX)
+    const auto optimal = static_cast<std::uint32_t>(std::min<std::uint64_t>(boundedOptimal64, UINT32_MAX));
+    const auto maximum = static_cast<std::uint32_t>(std::min<std::uint64_t>(maximum64, UINT32_MAX));
 
     allocation.optimalTimeMs = optimal;
     allocation.maximumTimeMs = maximum;

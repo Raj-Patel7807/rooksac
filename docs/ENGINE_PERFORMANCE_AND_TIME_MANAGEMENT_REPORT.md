@@ -84,10 +84,19 @@ if (optimalTimeMs.has_value()) {
 ```
 * **Result:** In standard opening and middlegame positions, RookSac completes a high-quality depth (depth 14) in **3.5 seconds** rather than overshooting into depth 15 for **8.2 seconds**.
 
-### Optimization 3: Checked 64-Bit Arithmetic Overflow Protection
+### Optimization 3: Checked 64-Bit Arithmetic Overflow Protection & Addition Overflow Fix
 In `engine/src/time_management.cpp`:
-All expressions involving `increment * 3U`, `usable * 3U`, and `optimal * 2U` were migrated to checked 64-bit unsigned integer calculations (`std::uint64_t` / `UINT32_MAX` saturation).
-* **Result:** Clock values of `UINT32_MAX` (49.7 days) or massive UCI increment fields can never cause arithmetic wraparound or zero allocation.
+1. **The `baseTime + incBonus` Addition Overflow:**
+   * *The Problem:* When `remaining` is large (e.g. 4,000,000,000 ms with `movesToGo = 1`), `baseTime` is ~4,000,000,000 ms. With `increment` = 4,000,000,000 ms, `incBonus` is 400,000,000 ms. In 32-bit arithmetic, $3,999,999,900 + 400,000,000 = 4,399,999,900$, which exceeds $2^{32}-1$ and silently wrapped around to **105,032,604 ms**, artificially capping the thinking time!
+   * *The Fix:* All intermediate calculations (`remaining64`, `usable64`, `baseTime64`, `incBonus64`, `optimal64`, `capByOptimal64`, `capByRemain64`, `maximum64`) were unified into `std::uint64_t` arithmetic. The addition `optimal64 = baseTime64 + incBonus64` is now mathematically exact and cannot overflow.
+2. **Checked Multiplications and Conversions:**
+   * All intermediate multiplications (`usable64 * 3ULL`, `increment64 * 3ULL`, `optimal64 * 2ULL`) are computed in 64-bit space.
+   * Narrowing conversions back to `std::uint32_t` use explicit bounded conversion:
+     ```cpp
+     const auto optimal = static_cast<std::uint32_t>(std::min<std::uint64_t>(boundedOptimal64, UINT32_MAX));
+     const auto maximum = static_cast<std::uint32_t>(std::min<std::uint64_t>(maximum64, UINT32_MAX));
+     ```
+* **Result:** Clock values of `UINT32_MAX` (49.7 days), dual maximum values (`wtime UINT32_MAX winc UINT32_MAX`), or `movestogo = 1` are guaranteed to evaluate without wraparound, underflow, or negative allocations.
 
 ---
 

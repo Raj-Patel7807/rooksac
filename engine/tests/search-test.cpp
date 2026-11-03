@@ -654,6 +654,36 @@ void testTimeManagerAllocation() {
         require(aHugeInc.optimalTimeMs > 0, "Huge increment produces positive optimal");
         require(aHugeInc.maximumTimeMs >= aHugeInc.optimalTimeMs, "Huge increment max >= optimal");
         require(aHugeInc.maximumTimeMs <= 10'000 / 5U, "Huge increment strictly capped at 20% of 10s clock");
+
+        // Targeted regression: baseTime + incBonus overflow test
+        // 4,000,000,000 ms (~46 days) remaining with movestogo = 1 gives baseTime = 3,999,999,900 ms.
+        // With increment = 4,000,000,000 ms, incCap = 400,000,000 ms.
+        // In 32-bit arithmetic, 3,999,999,900 + 400,000,000 = 4,399,999,900 wraps to 105,032,604 ms!
+        // With 64-bit safe intermediate arithmetic, optimal is strictly capped at capByRemain (800,000,000 ms)
+        // rather than collapsing to a wrapped value.
+        TimeControl tcOverflow;
+        tcOverflow.remainingTimeMs = 4'000'000'000U;
+        tcOverflow.incrementMs     = 4'000'000'000U;
+        tcOverflow.movesToGo       = 1U;
+        const TimeAllocation aOverflow = TimeManager::allocate(tcOverflow);
+        require(aOverflow.optimalTimeMs > 0, "Overflow scenario optimal is positive");
+        require(aOverflow.maximumTimeMs >= aOverflow.optimalTimeMs, "Overflow scenario max >= optimal");
+        require(aOverflow.maximumTimeMs <= 4'000'000'000U / 5U, "Overflow scenario respects 20% ceiling");
+        // Verify optimalTimeMs does not wrap around to 105,032,604 ms:
+        require(aOverflow.maximumTimeMs == 4'000'000'000U / 5U, "Overflow scenario max hits exactly 20% cap (800,000,000 ms)");
+        require(aOverflow.optimalTimeMs == 4'000'000'000U / 5U, "Overflow scenario optimal bounded to 20% cap (800,000,000 ms)");
+        require(aOverflow.maximumTimeMs + TimeManager::kHardReserveMs <= 4'000'000'000U, "Hard reserve strictly preserved");
+
+        // Both clock and increment at maximum representable UINT32_MAX
+        TimeControl tcDualMax;
+        tcDualMax.remainingTimeMs = UINT32_MAX;
+        tcDualMax.incrementMs     = UINT32_MAX;
+        tcDualMax.movesToGo       = 1U;
+        const TimeAllocation aDualMax = TimeManager::allocate(tcDualMax);
+        require(aDualMax.optimalTimeMs > 0, "Dual UINT32_MAX optimal > 0");
+        require(aDualMax.maximumTimeMs >= aDualMax.optimalTimeMs, "Dual UINT32_MAX max >= optimal");
+        require(aDualMax.maximumTimeMs <= UINT32_MAX / 5U, "Dual UINT32_MAX respects 20% cap");
+        require(aDualMax.maximumTimeMs + TimeManager::kHardReserveMs <= UINT32_MAX, "Dual UINT32_MAX respects hard reserve");
     }
 }
 
