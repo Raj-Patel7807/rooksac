@@ -322,3 +322,4 @@ confirm no Elo regression.
    searching with 4 threads would reduce depth-10 search time from ~18 s to ~5 s.
 5. **Staged legal move generation** — avoid make+unmake for clearly illegal moves
    using pin/check masks computed once per node.
+

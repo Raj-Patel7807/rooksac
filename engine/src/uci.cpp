@@ -2,6 +2,7 @@
 
 #include <cctype>
 #include <charconv>
+#include <chrono>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -351,6 +352,27 @@ void EngineSession::searchWorker(search::SearchLimits limits) {
     }
 
     ttable_.advanceAge();
+
+    // Per-depth callback: emit UCI info lines after each completed iteration.
+    const auto searchStart = std::chrono::steady_clock::now();
+    const search::DepthCallback infoCallback = [&](std::uint32_t depth, std::int32_t score,
+                                                    std::uint64_t nodes, std::optional<Move> bestMove) {
+        const auto elapsedMs = static_cast<std::uint64_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - searchStart).count());
+        const std::uint64_t nps = (elapsedMs > 0) ? (nodes * 1000U / elapsedMs) : nodes;
+        out_ << "info depth " << depth
+             << " score cp " << score
+             << " nodes " << nodes
+             << " nps " << nps
+             << " time " << elapsedMs;
+        if (bestMove.has_value()) {
+            out_ << " pv " << formatMove(*bestMove);
+        }
+        out_ << '\n';
+        out_.flush();
+    };
+
     const auto result = search::search(
         position_,
         limits,
@@ -358,13 +380,9 @@ void EngineSession::searchWorker(search::SearchLimits limits) {
             return eval::evaluateSideToMove(pos);
         },
         &stopToken_,
-        &ttable_);
-
-    // Emit search info (depth, score cp, nodes, nps)
-    out_ << "info depth " << result.completedDepth
-         << " score cp " << result.score
-         << " nodes " << result.stats.nodes
-         << '\n';
+        &ttable_,
+        search::SearchOptions{},
+        &infoCallback);
 
     // Emit bestmove strictly to stdout
     if (result.bestMove.has_value()) {

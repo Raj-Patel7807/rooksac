@@ -518,7 +518,8 @@ SearchResult search(
     const LeafEvaluator& evaluator,
     SearchStopToken* stopToken,
     tt::TranspositionTable* ttable,
-    const SearchOptions& options) {
+    const SearchOptions& options,
+    const DepthCallback* depthCallback) {
     SearchContext context;
     context.stopToken = stopToken;
     context.ttable    = ttable;
@@ -691,6 +692,12 @@ SearchResult search(
         lastCompletedResult.score        = iterationBestScore;
         lastCompletedResult.completedDepth = currentDepth;
         pvMove = iterationBestMove;
+
+        // Notify caller of completed iteration (e.g. to emit UCI info lines)
+        if (depthCallback) {
+            (*depthCallback)(currentDepth, iterationBestScore,
+                             lastCompletedResult.stats.nodes, iterationBestMove);
+        }
 
         // Store root position in TT
         if (ttable) {

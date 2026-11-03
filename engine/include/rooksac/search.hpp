@@ -92,6 +92,13 @@ struct SearchResult {
 /// \brief Leaf evaluator signature.
 using LeafEvaluator = std::function<std::int32_t(const Position&)>;
 
+/// \brief Per-depth callback invoked after each completed iterative deepening iteration.
+/// Called with the depth, score, nodes, and best move of the completed iteration.
+/// Can be used to emit UCI 'info depth' lines during search.
+/// The callback must be fast and must not call back into the engine.
+using DepthCallback = std::function<void(std::uint32_t depth, std::int32_t score,
+                                         std::uint64_t nodes, std::optional<Move> bestMove)>;
+
 /// \brief Recursive quiescence search resolving tactical capture and promotion chains.
 [[nodiscard]] std::int32_t quiescence(
     Position& position,
@@ -133,6 +140,10 @@ using LeafEvaluator = std::function<std::int32_t(const Position&)>;
 /// The \p options parameter controls which advanced techniques (aspiration windows, PVS,
 /// null-move pruning, LMR, killer heuristic) are active. Defaults to all enabled.
 /// Pass `SearchOptions::vanilla()` to obtain plain alpha-beta without enhancements.
+///
+/// The optional \p depthCallback is invoked after each completed iterative-deepening
+/// iteration and can be used to emit UCI 'info' lines. It must not modify the position
+/// or call back into the engine.
 [[nodiscard]] SearchResult search(
     Position& position,
     const SearchLimits& limits,
@@ -141,7 +152,8 @@ using LeafEvaluator = std::function<std::int32_t(const Position&)>;
     },
     SearchStopToken* stopToken = nullptr,
     tt::TranspositionTable* ttable = nullptr,
-    const SearchOptions& options = SearchOptions{});
+    const SearchOptions& options = SearchOptions{},
+    const DepthCallback* depthCallback = nullptr);
 
 }  // namespace search
 }  // namespace rooksac
