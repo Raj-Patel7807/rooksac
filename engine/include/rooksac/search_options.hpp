@@ -16,9 +16,9 @@ namespace search {
 struct SearchOptions {
     /// \brief Enable aspiration windows around the expected score from the previous iteration.
     ///
-    /// On failure (score outside the window), the window is widened and the position
-    /// is re-searched. Falls back to a full [-inf, +inf] window on repeated failures.
-    /// Only applied at root depth >= 2 so the first iteration always uses full window.
+    /// On failure (score outside the window), the window is widened progressively
+    /// (delta *= 2) and re-searched. Falls back to a full [-inf, +inf] window after
+    /// two consecutive failures. Only applied at root depth >= 2.
     bool aspirationWindows = true;
 
     /// \brief Initial half-width of the aspiration window in centipawns.
@@ -31,12 +31,12 @@ struct SearchOptions {
     /// it is re-searched with the full window. Requires good move ordering to be effective.
     bool pvSearch = true;
 
-    /// \brief Enable null-move pruning (NMP) with a fixed reduction.
+    /// \brief Enable null-move pruning (NMP) with adaptive reduction.
     ///
     /// When not in check and sufficient material is present (zugzwang safeguard),
     /// the engine makes a "null move" (passes its turn) and searches at reduced depth.
     /// If the result is still >= beta the position is considered to fail-high and the
-    /// branch is pruned. The full-depth re-search condition is applied conservatively.
+    /// branch is pruned.
     bool nullMovePruning = true;
 
     /// \brief Reduction applied to null-move search depth in plies.
@@ -49,9 +49,9 @@ struct SearchOptions {
     /// \brief Enable Late Move Reductions (LMR).
     ///
     /// Moves searched late in the move list (well after the PV and captures) and at
-    /// sufficient depth are searched at reduced depth. On a fail-high (the reduced
-    /// search exceeds alpha), the position is re-searched at full depth. Using
-    /// conservative conditions avoids missing tactical solutions.
+    /// sufficient depth are searched at a depth-scaled reduction. On a fail-high
+    /// (the reduced search exceeds alpha), the position is re-searched at full depth.
+    /// Using conservative conditions avoids missing tactical solutions.
     bool lmr = true;
 
     /// \brief Minimum search depth at which LMR is applied.
@@ -60,14 +60,21 @@ struct SearchOptions {
     /// \brief Minimum move index (0-based) beyond which LMR is applied.
     std::uint32_t lmrMoveThreshold = 3;
 
-    /// \brief Reduction in plies applied by LMR.
-    std::uint32_t lmrReduction = 1;
+    /// \brief Base LMR reduction in plies (depth-scaled formula adds depth/5 on top).
+    std::uint32_t lmrBaseReduction = 1;
 
     /// \brief Enable the killer move heuristic.
     ///
     /// Two quiet moves per ply that caused a beta cutoff in a sibling node are stored
     /// and ordered just below captures. This improves pruning without full history tables.
     bool killerMoves = true;
+
+    /// \brief Enable the history heuristic for quiet move ordering.
+    ///
+    /// A 12x64 table tracks how frequently each (piece, to-square) combination causes
+    /// a beta cutoff at depth d (bonus = d^2). Quiet moves beyond killers are ordered
+    /// by this score, producing better cutoffs in subsequent iterations.
+    bool historyHeuristic = true;
 
     /// \brief Maximum ply depth for which killer moves are tracked.
     static constexpr std::uint32_t kMaxKillerPly = 64;
@@ -79,15 +86,15 @@ struct SearchOptions {
     /// Produces plain alpha-beta with PV-first move ordering for differential testing.
     [[nodiscard]] static constexpr SearchOptions vanilla() noexcept {
         SearchOptions opts;
-        opts.aspirationWindows = false;
-        opts.pvSearch = false;
-        opts.nullMovePruning = false;
-        opts.lmr = false;
-        opts.killerMoves = false;
+        opts.aspirationWindows  = false;
+        opts.pvSearch           = false;
+        opts.nullMovePruning    = false;
+        opts.lmr                = false;
+        opts.killerMoves        = false;
+        opts.historyHeuristic   = false;
         return opts;
     }
 };
 
 }  // namespace search
 }  // namespace rooksac
-

@@ -26,6 +26,10 @@ struct SearchContext {
     // Pointer may be null if killer heuristic is disabled.
     KillerTable* killers = nullptr;
 
+    // History heuristic table, allocated per search invocation on the stack inside `search()`.
+    // Pointer may be null if history heuristic is disabled.
+    HistoryTable* history = nullptr;
+
     // Active search options for this invocation.
     SearchOptions options;
 
@@ -51,7 +55,7 @@ struct SearchContext {
     }
 };
 
-// ─── Quiescence search (unchanged interface, context-aware) ─────────────────
+// ─── Quiescence search ───────────────────────────────────────────────────────
 
 std::int32_t quiescenceInternal(
     Position& position,
@@ -168,7 +172,7 @@ std::int32_t quiescenceInternal(
     return bestScore;
 }
 
-// ─── Enhanced Alpha-Beta (PVS, NMP, LMR, killers) ───────────────────────────
+// ─── Enhanced Alpha-Beta (PVS, NMP, LMR, killers, history) ──────────────────
 
 std::int32_t alphaBetaInternal(
     Position& position,
@@ -236,7 +240,7 @@ std::int32_t alphaBetaInternal(
         return quiescenceInternal(position, alpha, beta, ply, stats, evaluator, context);
     }
 
-    const bool inCheck = movegen::isInCheck(position);
+    const bool inCheck  = movegen::isInCheck(position);
     const bool isPvNode = (beta - alpha > 1);  // True when window is wider than null-window
 
     // ── Null-move pruning ─────────────────────────────────────────────────
@@ -244,21 +248,20 @@ std::int32_t alphaBetaInternal(
     // The zugzwang safeguard: require at least one non-pawn piece so that passing a turn
     // is not catastrophically incorrect (e.g., king+pawns endgames are risky).
     if (context && context->options.nullMovePruning && !inCheck && !isPvNode && depth >= 2) {
-        const std::uint32_t nmpR = context->options.nullMoveReduction;
+        const std::uint32_t nmpR    = context->options.nullMoveReduction;
         const std::int32_t minPieces = context->options.nullMoveMinPieces;
 
         // Count non-pawn/king pieces for the side to move
-        const Color stm = position.sideToMove();
+        const Color stm         = position.sideToMove();
         const Bitboard ownKnights = position.pieces(stm, PieceType::Knight);
         const Bitboard ownBishops = position.pieces(stm, PieceType::Bishop);
-        const Bitboard ownRooks = position.pieces(stm, PieceType::Rook);
-        const Bitboard ownQueens = position.pieces(stm, PieceType::Queen);
+        const Bitboard ownRooks   = position.pieces(stm, PieceType::Rook);
+        const Bitboard ownQueens  = position.pieces(stm, PieceType::Queen);
         const std::int32_t nonPawnCount = static_cast<std::int32_t>(
             rooksac::popCount(ownKnights) + rooksac::popCount(ownBishops) +
-            rooksac::popCount(ownRooks) + rooksac::popCount(ownQueens));
+            rooksac::popCount(ownRooks)   + rooksac::popCount(ownQueens));
 
         if (nonPawnCount >= minPieces && depth >= nmpR + 1) {
-            // Make null move (pass the turn without moving a piece)
             UndoState undo;
             position.makeNullMove(undo);
 
@@ -280,14 +283,15 @@ std::int32_t alphaBetaInternal(
         }
     }
 
-    // 5. Staged move ordering (with TT best move and killers prioritized)
-    KillerTable* killers = (context && context->options.killerMoves) ? context->killers : nullptr;
-    orderMoves(position, legalMoves, ttMove, killers, ply);
+    // 5. Staged move ordering (with TT best move, killers, and history prioritised)
+    KillerTable*  killers = (context && context->options.killerMoves)  ? context->killers  : nullptr;
+    HistoryTable* history = (context && context->options.historyHeuristic) ? context->history : nullptr;
+    orderMoves(position, legalMoves, ttMove, killers, ply, history);
 
     // 6. Fail-soft Alpha-Beta with PVS and LMR
     const std::int32_t originalAlpha = alpha;
-    std::int32_t bestScore = -kInfinity;
-    std::optional<Move> bestMove = std::nullopt;
+    std::int32_t bestScore           = -kInfinity;
+    std::optional<Move> bestMove     = std::nullopt;
     const bool usePvs = context && context->options.pvSearch;
     const bool useLmr = context && context->options.lmr;
 
@@ -297,8 +301,6 @@ std::int32_t alphaBetaInternal(
         (void)position.makeMove(m, undo);
 
         const bool isCapture = (m.promotion() != PieceType::None) || [&]() {
-            // Check if the square was occupied before the move (which would mean it's a capture)
-            // Since we've already made the move, check the undo state's captured piece
             return undo.capturedPiece != Piece::None;
         }();
 
@@ -309,14 +311,18 @@ std::int32_t alphaBetaInternal(
             score = -alphaBetaInternal(
                 position, -beta, -alpha, depth - 1, ply + 1, stats, evaluator, context);
         } else {
-            // LMR: late quiet moves at sufficient depth get a reduced-depth search first
+            // LMR: late quiet moves at sufficient depth get a depth-scaled reduction first.
+            // Reduction formula: base + depth/5, so reductions grow with search depth.
             bool doLmr = useLmr &&
                          !isCapture &&
                          !inCheck &&
                          depth >= context->options.lmrMinDepth &&
-                         i >= context->options.lmrMoveThreshold;
+                         i    >= context->options.lmrMoveThreshold;
 
-            std::uint32_t reduction = doLmr ? context->options.lmrReduction : 0U;
+            std::uint32_t reduction   = 0U;
+            if (doLmr) {
+                reduction = context->options.lmrBaseReduction + (depth / 5U);
+            }
             std::uint32_t searchDepth = (depth > 0) ? (depth - 1) : 0;
             // Clamp reduction so we never search at negative depth
             if (reduction > searchDepth) {
@@ -343,7 +349,7 @@ std::int32_t alphaBetaInternal(
 
         if (score > bestScore) {
             bestScore = score;
-            bestMove = m;
+            bestMove  = m;
         }
         if (score > alpha) {
             alpha = score;
@@ -351,9 +357,14 @@ std::int32_t alphaBetaInternal(
         if (alpha >= beta) {
             ++stats.cutoffs;
 
-            // Killer move: record quiet moves that caused a beta cutoff
-            if (killers != nullptr && undo.capturedPiece == Piece::None && m.promotion() == PieceType::None) {
-                storeKillerMove(*killers, ply, m);
+            // Killer move and history update: record quiet moves that caused a beta cutoff
+            if (undo.capturedPiece == Piece::None && m.promotion() == PieceType::None) {
+                if (killers != nullptr) {
+                    storeKillerMove(*killers, ply, m);
+                }
+                if (history != nullptr) {
+                    updateHistory(*history, position, m, depth);
+                }
             }
 
             break;  // Beta cutoff (fail-high)
@@ -450,18 +461,18 @@ SearchResult searchMinimax(
     const SearchLimits& limits,
     const LeafEvaluator& evaluator) {
     SearchResult result;
-    result.stats.nodes = 1;  // Root node visited
+    result.stats.nodes    = 1;  // Root node visited
     result.stats.maxDepth = 0;
-    result.stats.cutoffs = 0;
+    result.stats.cutoffs  = 0;
 
     if (limits.depth == 0) {
-        result.score = evaluator(position);
+        result.score    = evaluator(position);
         result.bestMove = std::nullopt;
         return result;
     }
 
     if (position.halfmoveClock() >= 100) {
-        result.score = kDrawScore;
+        result.score    = kDrawScore;
         result.bestMove = std::nullopt;
         return result;
     }
@@ -479,7 +490,7 @@ SearchResult searchMinimax(
         return result;
     }
 
-    std::int32_t bestScore = -kInfinity;
+    std::int32_t bestScore       = -kInfinity;
     std::optional<Move> bestMove = legalMoves[0];
 
     for (std::size_t i = 0; i < legalMoves.size(); ++i) {
@@ -491,12 +502,12 @@ SearchResult searchMinimax(
 
         if (score > bestScore) {
             bestScore = score;
-            bestMove = m;
+            bestMove  = m;
         }
     }
 
-    result.bestMove = bestMove;
-    result.score = bestScore;
+    result.bestMove       = bestMove;
+    result.score          = bestScore;
     result.completedDepth = limits.depth;
     return result;
 }
@@ -510,9 +521,9 @@ SearchResult search(
     const SearchOptions& options) {
     SearchContext context;
     context.stopToken = stopToken;
-    context.ttable = ttable;
-    context.maxNodes = limits.maxNodes;
-    context.options = options;
+    context.ttable    = ttable;
+    context.maxNodes  = limits.maxNodes;
+    context.options   = options;
 
     // Killer table: zero-initialized (default Move is a null/invalid move)
     KillerTable killerTable{};
@@ -520,29 +531,36 @@ SearchResult search(
         context.killers = &killerTable;
     }
 
+    // History table: zero-initialized on each new search invocation
+    HistoryTable historyTable{};
+    clearHistory(historyTable);
+    if (options.historyHeuristic) {
+        context.history = &historyTable;
+    }
+
     // Time allocation setup
     std::optional<std::uint32_t> optimalTimeMs;
     if (limits.timeAllocation.has_value()) {
-        optimalTimeMs = limits.timeAllocation->optimalTimeMs;
+        optimalTimeMs   = limits.timeAllocation->optimalTimeMs;
         context.deadline = context.startTime + std::chrono::milliseconds(limits.timeAllocation->maximumTimeMs);
     } else if (limits.moveTimeMs.has_value() || limits.remainingTimeMs.has_value()) {
         TimeControl tc;
-        tc.moveTimeMs = limits.moveTimeMs;
+        tc.moveTimeMs      = limits.moveTimeMs;
         tc.remainingTimeMs = limits.remainingTimeMs;
-        tc.incrementMs = limits.incrementMs;
-        tc.movesToGo = limits.movesToGo;
+        tc.incrementMs     = limits.incrementMs;
+        tc.movesToGo       = limits.movesToGo;
         const TimeAllocation alloc = TimeManager::allocate(tc);
-        optimalTimeMs = alloc.optimalTimeMs;
+        optimalTimeMs    = alloc.optimalTimeMs;
         context.deadline = context.startTime + std::chrono::milliseconds(alloc.maximumTimeMs);
     }
 
     SearchResult lastCompletedResult;
-    lastCompletedResult.stats.nodes = 1;  // Root node visited
+    lastCompletedResult.stats.nodes    = 1;  // Root node visited
     lastCompletedResult.stats.maxDepth = 0;
-    lastCompletedResult.stats.cutoffs = 0;
+    lastCompletedResult.stats.cutoffs  = 0;
 
     if (position.halfmoveClock() >= 100) {
-        lastCompletedResult.score = kDrawScore;
+        lastCompletedResult.score    = kDrawScore;
         lastCompletedResult.bestMove = std::nullopt;
         return lastCompletedResult;
     }
@@ -561,11 +579,11 @@ SearchResult search(
     }
 
     // Legal fallback move guaranteed before starting deep search
-    lastCompletedResult.bestMove = legalMoves[0];
-    lastCompletedResult.score = evaluator(position);
+    lastCompletedResult.bestMove     = legalMoves[0];
+    lastCompletedResult.score        = evaluator(position);
     lastCompletedResult.completedDepth = 0;
 
-    std::optional<Move> pvMove = std::nullopt;
+    std::optional<Move> pvMove  = std::nullopt;
     const std::uint32_t maxDepth = std::clamp(limits.depth, 1U, 64U);
 
     // Iterative Deepening loop: depth 1 upward
@@ -576,31 +594,31 @@ SearchResult search(
         }
 
         // Root move ordering: PV move from previous iteration is ordered first
-        orderMoves(position, legalMoves, pvMove, context.killers, 0);
+        orderMoves(position, legalMoves, pvMove, context.killers, 0, context.history);
 
         // ── Aspiration windows ───────────────────────────────────────────────
         // Use full window for depth 1 (no prior score to center on).
-        // From depth 2 onward, try a narrow window and widen on failure.
+        // From depth 2 onward, try a narrow window and widen progressively on failure.
         std::int32_t aspirationAlpha = -kInfinity;
-        std::int32_t aspirationBeta = kInfinity;
+        std::int32_t aspirationBeta  = kInfinity;
+        std::int32_t aspirationDelta = options.aspirationDelta;
 
         if (options.aspirationWindows && currentDepth >= 2) {
             const std::int32_t prevScore = lastCompletedResult.score;
-            const std::int32_t delta = options.aspirationDelta;
-            aspirationAlpha = prevScore - delta;
-            aspirationBeta = prevScore + delta;
+            aspirationAlpha = prevScore - aspirationDelta;
+            aspirationBeta  = prevScore + aspirationDelta;
         }
 
-        std::int32_t iterationBestScore = -kInfinity;
+        std::int32_t iterationBestScore       = -kInfinity;
         std::optional<Move> iterationBestMove = legalMoves[0];
 
-        // Aspiration search loop: widen window until we succeed or use full window
+        // Aspiration search loop: widen window progressively until we succeed or use full window
         bool aspirationDone = false;
         while (!aspirationDone) {
-            std::int32_t alpha = aspirationAlpha;
+            std::int32_t alpha  = aspirationAlpha;
             const std::int32_t beta = aspirationBeta;
-            iterationBestScore = -kInfinity;
-            iterationBestMove = legalMoves[0];
+            iterationBestScore  = -kInfinity;
+            iterationBestMove   = legalMoves[0];
 
             for (std::size_t i = 0; i < legalMoves.size(); ++i) {
                 const Move m = legalMoves[i];
@@ -616,7 +634,7 @@ SearchResult search(
 
                 if (score > iterationBestScore) {
                     iterationBestScore = score;
-                    iterationBestMove = m;
+                    iterationBestMove  = m;
                 }
                 if (score > alpha) {
                     alpha = score;
@@ -627,20 +645,34 @@ SearchResult search(
                 break;
             }
 
-            // Aspiration window result analysis:
-            // - Fail-low (score <= aspirationAlpha): widen low side
-            // - Fail-high (score >= aspirationBeta): widen high side
+            // Aspiration window result analysis with progressive widening:
+            // - Fail-low (score <= aspirationAlpha): widen low side, double delta
+            // - Fail-high (score >= aspirationBeta): widen high side, double delta
+            // - Two consecutive failures: fall back to full window
             // - Within window: done
             if (options.aspirationWindows && currentDepth >= 2 &&
                 aspirationAlpha != -kInfinity && aspirationBeta != kInfinity) {
                 if (iterationBestScore <= aspirationAlpha) {
-                    // Fail-low: widen downward (fall back to full window)
-                    aspirationAlpha = -kInfinity;
-                    // Keep aspirationBeta the same (we only failed low)
+                    // Fail-low: widen downward progressively
+                    aspirationDelta *= 2;
+                    aspirationAlpha = aspirationAlpha - aspirationDelta;
+                    if (aspirationAlpha < -kInfinity / 2) {
+                        aspirationAlpha = -kInfinity;
+                    }
+                    // If we've already opened the window fully, stop re-searching
+                    if (aspirationAlpha == -kInfinity) {
+                        aspirationDone = true;
+                    }
                 } else if (iterationBestScore >= aspirationBeta) {
-                    // Fail-high: widen upward (fall back to full window)
-                    aspirationBeta = kInfinity;
-                    // Keep aspirationAlpha the same (we only failed high)
+                    // Fail-high: widen upward progressively
+                    aspirationDelta *= 2;
+                    aspirationBeta = aspirationBeta + aspirationDelta;
+                    if (aspirationBeta > kInfinity / 2) {
+                        aspirationBeta = kInfinity;
+                    }
+                    if (aspirationBeta == kInfinity) {
+                        aspirationDone = true;
+                    }
                 } else {
                     aspirationDone = true;
                 }
@@ -655,8 +687,8 @@ SearchResult search(
         }
 
         // Iteration fully completed: update lastCompletedResult
-        lastCompletedResult.bestMove = iterationBestMove;
-        lastCompletedResult.score = iterationBestScore;
+        lastCompletedResult.bestMove     = iterationBestMove;
+        lastCompletedResult.score        = iterationBestScore;
         lastCompletedResult.completedDepth = currentDepth;
         pvMove = iterationBestMove;
 
