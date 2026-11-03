@@ -230,3 +230,31 @@ A dedicated correctness and tournament-reliability audit was conducted to resolv
 * **Stalemate:** Verified across all search functions.
 * **Threefold Repetition & Insufficient Material:**
   - *Current Status:* Threefold repetition in game history is tracked at the match/session level. Path repetition along the search tree and rule-specific insufficient material (K vs K, K+B vs K, K+N vs K) are documented architectural enhancements for future sprints, as full search-tree graph cycles are mitigated by Zobrist transposition table depth bounds.
+
+---
+
+## 10. Complete Chess Rules & Search Correctness Completion (2026-11-03)
+
+Following the initial audit, the remaining chess-rule handling and search-correctness work was completed and certified:
+
+### A. Explicit Threefold & Search-Path Repetition Detection
+* **Implementation:** Stack-allocated search-path history array (`historyPath` inside `SearchContext`, capacity 256) tracking full 64-bit Zobrist hashes across active search plies.
+* **Semantics:** At every non-root alpha-beta node (`ply > 0`), `context->isRepetition(hash, position.halfmoveClock())` inspects identical positions occurring at 2-ply intervals along the active search branch, bounded by the position's `halfmoveClock` (irreversible move boundary).
+* **Isolation:** Search branches push keys on make and pop keys on unmake, guaranteeing zero cross-contamination between sibling subtrees.
+* **Result:** Loops and repetition lines evaluate deterministically to `kDrawScore` (0), preventing circular searches and tactical blindness to threefold draws.
+
+### B. Standard Insufficient-Material Dead-Position Detection
+* **Implementation:** Built dedicated `eval::hasInsufficientMaterial(const Position& position)` in `engine/src/material.cpp`.
+* **Rules Covered:**
+  - $K$ vs $K$
+  - $K+B$ vs $K$ (either side)
+  - $K+N$ vs $K$ (either side)
+  - $K+B$ vs $K+B$ where both bishops occupy squares of the same color (using `kDarkSquares` bitmask)
+  - Verified non-draw status for $K+B$ vs $K+B$ (opposite-colored bishops), $K+N$ vs $K+N$, $K+R$, $K+Q$, pawn positions, and multiple minor pieces.
+* **Integration:** Integrated into `legal_movegen::evaluateGameState()` as `GameResult::InsufficientMaterialDraw`, `match.cpp`, and search terminal checks (`alphaBetaInternal`, `quiescenceInternal`, `negamax`, `searchMinimax`, and root `search`).
+
+### C. Quiescence Boundary Evaluation Hardening
+* **Implementation:** Addressed the boundary condition when `ply >= kMaxQsearchDepth`. If the king is in check at the boundary:
+  - If no evasions exist, `-kMateScore + ply` is returned (checkmate recognized).
+  - If evasions exist, the engine now generates depth-1 evasions and evaluates the legitimate post-evasion leaf states (`-evaluator(position)`), returning the optimal evasion rather than taking an invalid stand-pat on a king under check.
+* **Result:** Eliminates misleading tactical scores for in-check quiescence leaves while strictly bounding search depth.
