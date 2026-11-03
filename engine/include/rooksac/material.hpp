@@ -39,6 +39,14 @@ inline constexpr MaterialWeights kDefaultMaterialWeights{};
 /// \brief Computes net material balance from the perspective of the side to move (positive favors side to move).
 [[nodiscard]] std::int32_t evaluateMaterialSideToMove(const Position& position, const MaterialWeights& weights = kDefaultMaterialWeights) noexcept;
 
+/// \brief Checks whether the position has insufficient material for checkmate by either side.
+/// Specifically detects:
+/// - K vs K
+/// - K+B vs K
+/// - K+N vs K
+/// - K+B vs K+B where both bishops are on the same square color
+[[nodiscard]] bool hasInsufficientMaterial(const Position& position) noexcept;
+
 }  // namespace eval
 }  // namespace rooksac
 

@@ -128,6 +128,62 @@ void testMaterialBaselineRemainsAvailable() {
     require(matScore == 0, "Baseline material evaluator remains available and yields 0 for startpos");
 }
 
+void testInsufficientMaterialDetection() {
+    // 1. King vs King -> DRAW
+    auto kvk = Position::fromFen("4k3/8/8/8/8/8/8/4K3 w - - 0 1");
+    require(kvk.hasValue() && eval::hasInsufficientMaterial(*kvk), "K vs K is insufficient material");
+
+    // 2. King + Bishop vs King -> DRAW (White)
+    auto kbvk_w = Position::fromFen("4k3/8/8/8/8/8/8/4KB2 w - - 0 1");
+    require(kbvk_w.hasValue() && eval::hasInsufficientMaterial(*kbvk_w), "K+B vs K (White) is insufficient material");
+
+    // 3. King vs King + Bishop -> DRAW (Black)
+    auto kbvk_b = Position::fromFen("4k3/8/8/8/8/8/8/4Kb2 w - - 0 1");
+    require(kbvk_b.hasValue() && eval::hasInsufficientMaterial(*kbvk_b), "K vs K+B (Black) is insufficient material");
+
+    // 4. King + Knight vs King -> DRAW (White)
+    auto knvk_w = Position::fromFen("4k3/8/8/8/8/8/8/4KN2 w - - 0 1");
+    require(knvk_w.hasValue() && eval::hasInsufficientMaterial(*knvk_w), "K+N vs K (White) is insufficient material");
+
+    // 5. King vs King + Knight -> DRAW (Black)
+    auto knvk_b = Position::fromFen("4k3/8/8/8/8/8/8/4Kn2 w - - 0 1");
+    require(knvk_b.hasValue() && eval::hasInsufficientMaterial(*knvk_b), "K vs K+N (Black) is insufficient material");
+
+    // 6. King + Bishop vs King + Bishop with same-colored bishops -> DRAW
+    // c1 (rank 1, file c) is dark. d8 (rank 8, file d) is dark. Both bishops are on dark squares.
+    auto kbvkb_same = Position::fromFen("3bk3/8/8/8/8/8/8/2B1K3 w - - 0 1");
+    require(kbvkb_same.hasValue() && eval::hasInsufficientMaterial(*kbvkb_same), "K+B vs K+B same color bishops is insufficient material");
+
+    // 7. King + Bishop vs King + Bishop with opposite-colored bishops -> NOT DRAW (checkmate theoretically possible)
+    // c1 (dark) and c8 (light): opposite square colors.
+    auto kbvkb_opp = Position::fromFen("2b1k3/8/8/8/8/8/8/2B1K3 w - - 0 1");
+    require(kbvkb_opp.hasValue() && !eval::hasInsufficientMaterial(*kbvkb_opp), "K+B vs K+B opposite color bishops is sufficient material");
+
+    // 8. King + Knight vs King + Knight -> NOT DRAW under basic FIDE dead-position rules (helpmate is possible)
+    auto knvkn = Position::fromFen("4k3/8/8/8/8/8/8/4KNn1 w - - 0 1");
+    require(knvkn.hasValue() && !eval::hasInsufficientMaterial(*knvkn), "K+N vs K+N is NOT dead position (helpmate possible)");
+
+    // 9. King + Rook vs King -> NOT DRAW
+    auto krvk = Position::fromFen("4k3/8/8/8/8/8/8/4KR2 w - - 0 1");
+    require(krvk.hasValue() && !eval::hasInsufficientMaterial(*krvk), "K+R vs K is sufficient material");
+
+    // 10. King + Queen vs King -> NOT DRAW
+    auto kqvk = Position::fromFen("4k3/8/8/8/8/8/8/4KQ2 w - - 0 1");
+    require(kqvk.hasValue() && !eval::hasInsufficientMaterial(*kqvk), "K+Q vs K is sufficient material");
+
+    // 11. King + Pawn vs King -> NOT DRAW
+    auto kpvk = Position::fromFen("4k3/8/8/8/8/8/4P3/4K3 w - - 0 1");
+    require(kpvk.hasValue() && !eval::hasInsufficientMaterial(*kpvk), "K+P vs K is sufficient material");
+
+    // 12. Multiple minor pieces: K+B+B vs K -> NOT DRAW
+    auto kbbvk = Position::fromFen("4k3/8/8/8/8/8/8/3BBK2 w - - 0 1");
+    require(kbbvk.hasValue() && !eval::hasInsufficientMaterial(*kbbvk), "K+B+B vs K is sufficient material");
+
+    // 13. Multiple minor pieces: K+N+N vs K -> NOT DRAW (mate theoretically possible)
+    auto knnvk = Position::fromFen("4k3/8/8/8/8/8/8/3NNK2 w - - 0 1");
+    require(knnvk.hasValue() && !eval::hasInsufficientMaterial(*knnvk), "K+N+N vs K is sufficient material");
+}
+
 void testEvaluationBenchmarkAndThroughput() {
     auto pos = Position::startPosition();
 
@@ -158,6 +214,7 @@ int main() {
     testBishopPairAndRookActivity();
     testGamePhaseAndTaperedBlending();
     testMaterialBaselineRemainsAvailable();
+    testInsufficientMaterialDetection();
     testEvaluationBenchmarkAndThroughput();
 
     std::cout << "All classical tapered evaluation tests passed successfully.\n";

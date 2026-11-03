@@ -1,5 +1,7 @@
 #include "rooksac/legal_movegen.hpp"
 
+#include "rooksac/material.hpp"
+
 #include "rooksac/attacks.hpp"
 #include "rooksac/movegen.hpp"
 #include "rooksac/undo_state.hpp"
@@ -143,6 +145,10 @@ GameResult evaluateGameState(Position& position) noexcept {
 
     if (position.halfmoveClock() >= 100) {
         return GameResult::FiftyMoveDraw;
+    }
+
+    if (eval::hasInsufficientMaterial(position)) {
+        return GameResult::InsufficientMaterialDraw;
     }
 
     return GameResult::Ongoing;

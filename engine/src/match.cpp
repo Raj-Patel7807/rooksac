@@ -29,6 +29,8 @@ MatchResult playMatch(
                 match.terminationReason = "Stalemate";
             } else if (state == GameResult::FiftyMoveDraw) {
                 match.terminationReason = "Fifty-move rule draw";
+            } else if (state == GameResult::InsufficientMaterialDraw) {
+                match.terminationReason = "Insufficient material draw";
             }
             break;
         }

@@ -13,6 +13,7 @@ enum class GameResult {
     Checkmate,
     Stalemate,
     FiftyMoveDraw,
+    InsufficientMaterialDraw,
 };
 
 namespace movegen {
