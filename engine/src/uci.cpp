@@ -40,18 +40,24 @@ std::vector<std::string> splitTokens(std::string_view sv) {
 }
 
 std::optional<std::uint32_t> parseUint(std::string_view sv) {
+    if (sv.empty()) {
+        return std::nullopt;
+    }
     std::uint32_t val = 0;
     auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), val);
-    if (ec == std::errc()) {
+    if (ec == std::errc() && ptr == sv.data() + sv.size()) {
         return val;
     }
     return std::nullopt;
 }
 
 std::optional<std::uint64_t> parseUint64(std::string_view sv) {
+    if (sv.empty()) {
+        return std::nullopt;
+    }
     std::uint64_t val = 0;
     auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), val);
-    if (ec == std::errc()) {
+    if (ec == std::errc() && ptr == sv.data() + sv.size()) {
         return val;
     }
     return std::nullopt;

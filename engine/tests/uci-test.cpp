@@ -168,6 +168,38 @@ void testGoMovetimeAndClock() {
     require(clockOutput.find("bestmove ") != std::string::npos, "Emits bestmove under clock parameters");
 }
 
+
+void testNumericParsingRobustness() {
+    // Test that malformed numeric tokens in go command are cleanly rejected
+    // without crashing, and fallback defaults are safely preserved.
+    std::istringstream in(
+        "position startpos\n"
+        "go depth 123abc movetime 100xyz nodes 999zzz wtime 180000bad btime 180000bad winc 2000bad binc 2000bad movestogo 40bad\n"
+        "quit\n");
+    std::ostringstream out;
+    std::ostringstream err;
+
+    uci::EngineSession session(in, out, err);
+    session.run();
+
+    const std::string output = out.str();
+    require(output.find("bestmove ") != std::string::npos, "Engine survives malformed numeric tokens and produces bestmove");
+
+    // Extreme clock values (UINT32_MAX, large nodes)
+    std::istringstream inExtreme(
+        "position startpos\n"
+        "go depth 2 wtime 4294967295 btime 4294967295 winc 4294967295 binc 4294967295 nodes 18446744073709551615\n"
+        "quit\n");
+    std::ostringstream outExtreme;
+    std::ostringstream errExtreme;
+
+    uci::EngineSession sessionExtreme(inExtreme, outExtreme, errExtreme);
+    sessionExtreme.run();
+
+    const std::string extremeOutput = outExtreme.str();
+    require(extremeOutput.find("bestmove ") != std::string::npos, "Handles max uint32/uint64 values without overflow crash");
+}
+
 void testStopCommandInterruptsSearch() {
     // Search infinite or high depth, then send stop
     std::istringstream in("position startpos\ngo infinite\nstop\nquit\n");
@@ -191,6 +223,7 @@ int main() {
     testMalformedInputHandling();
     testGoDepthAndBestMove();
     testGoMovetimeAndClock();
+    testNumericParsingRobustness();
     testStopCommandInterruptsSearch();
 
     std::cout << "All UCI protocol and engine session tests passed successfully.\n";
