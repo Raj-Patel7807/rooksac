@@ -510,7 +510,7 @@ void testTimeManagerAllocation() {
     TimeAllocation alloc2 = TimeManager::allocate(tcClock);
     require(alloc2.optimalTimeMs > 0, "Optimal time is positive");
     require(alloc2.maximumTimeMs >= alloc2.optimalTimeMs, "Maximum time >= optimal time");
-    require(alloc2.maximumTimeMs <= 60'000, "Maximum time does not exceed remaining clock");
+    require(alloc2.maximumTimeMs < 60'000, "Maximum time does not exceed remaining clock");
 
     // 3. Tiny clock values (emergency time)
     TimeControl tcTiny;
@@ -521,12 +521,78 @@ void testTimeManagerAllocation() {
     require(alloc3.optimalTimeMs >= 1, "Tiny clock optimal time >= 1ms");
     require(alloc3.maximumTimeMs <= 10, "Tiny clock maximum time <= 10ms");
 
-    // 4. Extreme 1ms clock
+    // 4. Extreme 1ms clock (below hard reserve; must return minimum allocation)
     TimeControl tcExtreme;
     tcExtreme.remainingTimeMs = 1;
 
     TimeAllocation alloc4 = TimeManager::allocate(tcExtreme);
     require(alloc4.optimalTimeMs >= 1, "Extreme clock optimal time >= 1ms");
+
+    // ── 3+2 blitz-specific allocation checks ─────────────────────────────────
+
+    // 5. Full 3+2 starting clock: 180 s, inc 2 s
+    //    Maximum must not exceed 25% of remaining (45000 ms) and must not flag.
+    {
+        TimeControl tc;
+        tc.remainingTimeMs = 180'000;
+        tc.incrementMs     = 2'000;
+        const TimeAllocation a = TimeManager::allocate(tc);
+        require(a.optimalTimeMs > 0, "3+2 start: optimal > 0");
+        require(a.maximumTimeMs >= a.optimalTimeMs, "3+2 start: max >= optimal");
+        require(a.maximumTimeMs <= 45'000, "3+2 start: max <= 25% of clock");
+        require(a.maximumTimeMs + TimeManager::kHardReserveMs <= 180'000,
+                "3+2 start: hard reserve maintained");
+    }
+
+    // 6. Critical 3+2 clock: 10 s, inc 2 s
+    //    Maximum must be well below remaining to avoid flagging.
+    {
+        TimeControl tc;
+        tc.remainingTimeMs = 10'000;
+        tc.incrementMs     = 2'000;
+        const TimeAllocation a = TimeManager::allocate(tc);
+        require(a.optimalTimeMs > 0, "3+2 critical: optimal > 0");
+        require(a.maximumTimeMs >= a.optimalTimeMs, "3+2 critical: max >= optimal");
+        require(a.maximumTimeMs + TimeManager::kHardReserveMs <= 10'000,
+                "3+2 critical: hard reserve maintained");
+        require(a.maximumTimeMs <= 2'500, "3+2 critical: max <= 25% of 10s clock");
+    }
+
+    // 7. Emergency 3+2 clock: 1 s, inc 2 s
+    //    Even with large increment, must stay safely within remaining clock.
+    {
+        TimeControl tc;
+        tc.remainingTimeMs = 1'000;
+        tc.incrementMs     = 2'000;
+        const TimeAllocation a = TimeManager::allocate(tc);
+        require(a.optimalTimeMs >= 1, "3+2 emergency: optimal >= 1ms");
+        require(a.maximumTimeMs >= a.optimalTimeMs, "3+2 emergency: max >= optimal");
+        // Must leave hard reserve: max + kHardReserveMs <= remaining
+        require(a.maximumTimeMs + TimeManager::kHardReserveMs <= 1'000,
+                "3+2 emergency: must leave hard reserve on clock");
+    }
+
+    // 8. Maximum is always >= optimal (invariant)
+    {
+        for (std::uint32_t rem : {180'000U, 60'000U, 30'000U, 10'000U, 5'000U, 2'000U, 500U}) {
+            TimeControl tc;
+            tc.remainingTimeMs = rem;
+            tc.incrementMs     = 2'000;
+            const TimeAllocation a = TimeManager::allocate(tc);
+            require(a.maximumTimeMs >= a.optimalTimeMs, "Invariant: max >= optimal");
+        }
+    }
+
+    // 9. No allocation exceeds usable remaining clock
+    {
+        for (std::uint32_t rem : {180'000U, 60'000U, 10'000U, 1'000U, 100U}) {
+            TimeControl tc;
+            tc.remainingTimeMs = rem;
+            tc.incrementMs     = 2'000;
+            const TimeAllocation a = TimeManager::allocate(tc);
+            require(a.maximumTimeMs <= rem, "Maximum never exceeds remaining clock");
+        }
+    }
 }
 
 void testSearchLimitsControls() {
