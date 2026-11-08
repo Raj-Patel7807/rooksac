@@ -423,6 +423,9 @@ std::int32_t alphaBetaInternal(
             }
         }
 
+        if (context) {
+            context->popKey();
+        }
         position.unmakeMove(m, undo);
 
         if (context && context->aborted) {

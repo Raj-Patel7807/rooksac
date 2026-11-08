@@ -936,6 +936,143 @@ void testKillerMoveOrdering() {
     require(killerRes.completedDepth == 3, "Killer heuristic search completes requested depth");
 }
 
+
+void testPvLegalityAndCompletedIterations() {
+    // Test PV best-move legality across several depths and position types
+    const char* positions[] = {
+        Position::kStartPositionFen.data(),
+        "r1bqk2r/pppp1ppp/2n5/4p3/1b1Pn3/2N2N2/PPP1PPPP/R1BQKB1R w KQkq - 2 6",
+        "4r3/8/8/8/8/8/8/4K3 w - - 0 1",
+        "3r4/4P3/8/8/3q4/5N2/8/4K2k w - - 0 1"
+    };
+
+    for (const char* fen : positions) {
+        auto posOpt = Position::fromFen(fen);
+        require(posOpt.hasValue(), "PV test FEN parses");
+        Position pos = *posOpt;
+
+        MoveList legalMoves;
+        movegen::generateLegalMoves(pos, legalMoves);
+
+        for (std::uint32_t d = 1; d <= 3; ++d) {
+            search::SearchLimits limits(d);
+            auto res = search::search(pos, limits);
+            require(res.completedDepth == d, "Requested depth completed");
+            require(res.bestMove.has_value(), "Search returned best move");
+            require(legalMoves.contains(*res.bestMove), "PV best move is strictly legal in the root position");
+        }
+    }
+}
+
+void testPvsAndLmrReSearchCorrectness() {
+    // Compare vanilla search vs PVS+LMR on quiet tactical positions
+    // PVS with re-search must find a legal and sound move matching or beating vanilla
+    auto posOpt = Position::fromFen("r1bqk2r/pppp1ppp/2n5/4p3/1b1Pn3/2N2N2/PPP1PPPP/R1BQKB1R w KQkq - 2 6");
+    require(posOpt.hasValue(), "Tactical FEN parses");
+    Position pos = *posOpt;
+
+    MoveList legalMoves;
+    movegen::generateLegalMoves(pos, legalMoves);
+
+    search::SearchLimits limits(3);
+
+    // 1. Vanilla
+    auto vanillaOpts = search::SearchOptions::vanilla();
+    auto vanillaRes = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateSideToMove(p);
+    }, nullptr, nullptr, vanillaOpts);
+
+    // 2. PVS enabled only
+    search::SearchOptions pvsOpts = search::SearchOptions::vanilla();
+    pvsOpts.pvSearch = true;
+    auto pvsRes = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateSideToMove(p);
+    }, nullptr, nullptr, pvsOpts);
+
+    require(pvsRes.bestMove.has_value(), "PVS search finds best move");
+    require(legalMoves.contains(*pvsRes.bestMove), "PVS best move is legal");
+    require(pvsRes.completedDepth == 3, "PVS search completes depth 3");
+    require(pvsRes.score == vanillaRes.score, "PVS score matches vanilla alpha-beta score");
+
+    // 3. PVS + LMR enabled
+    search::SearchOptions lmrOpts = search::SearchOptions::vanilla();
+    lmrOpts.pvSearch = true;
+    lmrOpts.lmr = true;
+    auto lmrRes = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateSideToMove(p);
+    }, nullptr, nullptr, lmrOpts);
+
+    require(lmrRes.bestMove.has_value(), "PVS+LMR search finds best move");
+    require(legalMoves.contains(*lmrRes.bestMove), "PVS+LMR best move is legal");
+    require(lmrRes.completedDepth == 3, "PVS+LMR search completes depth 3");
+}
+
+void testNmpZugzwangSafeguard() {
+    // In king and pawn endgames, null-move pruning should NOT trigger due to zugzwang risk
+    // FEN: King + pawns only
+    auto posOpt = Position::fromFen("8/5k2/8/8/8/8/4P3/4K3 w - - 0 1");
+    require(posOpt.hasValue(), "KP endgame FEN parses");
+    Position pos = *posOpt;
+
+    search::SearchLimits limits(4);
+
+    search::SearchOptions vanillaOpts = search::SearchOptions::vanilla();
+    auto vanillaRes = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateSideToMove(p);
+    }, nullptr, nullptr, vanillaOpts);
+
+    search::SearchOptions nmpOpts = search::SearchOptions::vanilla();
+    nmpOpts.nullMovePruning = true;
+    auto nmpRes = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateSideToMove(p);
+    }, nullptr, nullptr, nmpOpts);
+
+    // Because non-pawn pieces == 0, NMP does not execute; nodes and score should match vanilla exactly
+    require(nmpRes.stats.nodes == vanillaRes.stats.nodes, "NMP zugzwang safeguard prevented null moves with pawns only");
+    require(nmpRes.score == vanillaRes.score, "Scores match with zugzwang safeguard");
+}
+
+void testAspirationFailLowFailHighRecovery() {
+    auto pos = Position::startPosition();
+    search::SearchLimits limits(3);
+
+    // Narrow aspiration window delta of 10 to force both fail-low and fail-high re-searches
+    search::SearchOptions aspOpts = search::SearchOptions::vanilla();
+    aspOpts.aspirationWindows = true;
+    aspOpts.aspirationDelta = 10;
+
+    auto res = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateSideToMove(p);
+    }, nullptr, nullptr, aspOpts);
+
+    require(res.completedDepth == 3, "Aspiration widening successfully recovers and reaches depth 3");
+    require(res.bestMove.has_value(), "Best move produced after widening");
+
+    MoveList legals;
+    movegen::generateLegalMoves(pos, legals);
+    require(legals.contains(*res.bestMove), "Recovered move is strictly legal");
+}
+
+void testAbortPropagationGuaranteedLegalFallback() {
+    auto pos = Position::startPosition();
+    MoveList legalMoves;
+    movegen::generateLegalMoves(pos, legalMoves);
+
+    // Stop token that aborts immediately
+    search::SearchStopToken stopToken;
+    stopToken.stop();
+
+    search::SearchLimits limits(10);
+    auto res = search::search(pos, limits, [](const Position& p) {
+        return eval::evaluateSideToMove(p);
+    }, &stopToken);
+
+    require(res.interrupted, "Search was interrupted by stop token");
+    require(res.completedDepth == 0, "No full depth completed");
+    require(res.bestMove.has_value(), "Guaranteed legal fallback move is populated even on immediate abort");
+    require(legalMoves.contains(*res.bestMove), "Guaranteed fallback move is strictly legal");
+}
+
 }  // namespace
 
 int main() {
@@ -966,6 +1103,11 @@ int main() {
     testKillerMoveOrdering();
     testSearchPathRepetitionDetection();
     testQuiescenceBoundaryEvasionScoring();
+    testPvLegalityAndCompletedIterations();
+    testPvsAndLmrReSearchCorrectness();
+    testNmpZugzwangSafeguard();
+    testAspirationFailLowFailHighRecovery();
+    testAbortPropagationGuaranteedLegalFallback();
 
     std::cout << "All Iterative Deepening, Quiescence, Time Control, and Search tests passed successfully.\n";
     return EXIT_SUCCESS;

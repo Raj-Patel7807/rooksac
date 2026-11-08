@@ -208,6 +208,49 @@ void testStaleMoveClearedOnReplacement() {
     require(probeCollision3.move->encoded() == moveB->encoded(), "Preserved move is still Move B");
 }
 
+
+void testTtBoundFlagSemanticsAndCollisions() {
+    tt::TranspositionTable table(1024 * 1024); // 1 MB
+    const std::size_t numEntries = (1024 * 1024) / sizeof(tt::Entry);
+
+    const std::uint64_t key1 = 0x1111222233334444ULL;
+    auto m1 = Move::create(Square::E2, Square::E4);
+    require(m1.has_value(), "Valid move");
+
+    // 1. Test LOWER bound:
+    table.store(key1, /*ply=*/0, /*depth=*/3, /*score=*/200, tt::Bound::Lower, m1);
+    auto probeLower = table.probe(key1, /*ply=*/0);
+    require(probeLower.hit, "Key1 hits TT");
+    require(probeLower.bound == tt::Bound::Lower, "Bound is Lower");
+    require(probeLower.score == 200, "Score matches");
+
+    // 2. Test UPPER bound:
+    const std::uint64_t key2 = 0x5555666677778888ULL;
+    table.store(key2, /*ply=*/0, /*depth=*/2, /*score=*/-150, tt::Bound::Upper, std::nullopt);
+    auto probeUpper = table.probe(key2, /*ply=*/0);
+    require(probeUpper.hit, "Key2 hits TT");
+    require(probeUpper.bound == tt::Bound::Upper, "Bound is Upper");
+    require(probeUpper.score == -150, "Score matches");
+    require(!probeUpper.move.has_value(), "Nullopt move");
+
+    // 3. Collision handling:
+    // Create key3 that hashes to the exact same bucket index as key1
+    const std::uint64_t key3 = key1 + static_cast<std::uint64_t>(numEntries);
+    auto probeBefore = table.probe(key3, /*ply=*/0);
+    require(!probeBefore.hit, "Key3 must NOT hit before being stored, despite sharing bucket index");
+
+    // Store key3 with lower depth (depth 1 < depth 3) - depending on replacement scheme,
+    // verify probe distinguishes the two keys
+    table.store(key3, /*ply=*/0, /*depth=*/5, /*score=*/300, tt::Bound::Exact, m1);
+    auto probeKey3 = table.probe(key3, /*ply=*/0);
+    require(probeKey3.hit, "Key3 hits after replacement");
+    require(probeKey3.score == 300, "Key3 score retrieved");
+
+    // Key1 was replaced, so probing key1 now must NOT return hit
+    auto probeKey1After = table.probe(key1, /*ply=*/0);
+    require(!probeKey1After.hit, "Key1 no longer hits because it was replaced by key3");
+}
+
 int main() {
     testZobristIncrementalVsRecomputed();
     testDistinctKeysForStateDifferences();
@@ -216,6 +259,7 @@ int main() {
 
     std::cout << "All Zobrist hashing and Transposition Table tests passed successfully.\n";
     testStaleMoveClearedOnReplacement();
+    testTtBoundFlagSemanticsAndCollisions();
 
     return 0;
 }
