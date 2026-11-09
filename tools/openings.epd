@@ -1,0 +1,28 @@
+# RookSac fixed opening suite — 20 diverse positions
+# Format: FEN | id | theme
+# SHA-256 of this file is recorded in docs/match_config.md for reproducibility.
+#
+# Sources: all positions are well-known theoretical openings in the public domain.
+# No engine-generated or copyrighted content.
+
+rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1 | id=op01 | theme=open_e4
+rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1 | id=op02 | theme=closed_d4
+rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2 | id=op03 | theme=sicilian
+rnbqkbnr/pppp1ppp/8/4p3/4PP2/8/PPPP2PP/RNBQKBNR b KQkq f3 0 2 | id=op04 | theme=kings_gambit
+rnbqkb1r/pppp1ppp/5n2/4p3/2B1P3/8/PPPP1PPP/RNBQK1NR w KQkq - 2 3 | id=op05 | theme=italian
+rnbqkb1r/pppp1ppp/5n2/1B2p3/4P3/8/PPPP1PPP/RNBQK1NR b KQkq - 2 3 | id=op06 | theme=ruy_lopez
+rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2 | id=op07 | theme=scandinavian
+rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq d6 0 2 | id=op08 | theme=queens_gambit
+rnbqkb1r/ppp1pppp/5n2/3p4/3P4/5N2/PPP1PPPP/RNBQKB1R w KQkq - 2 3 | id=op09 | theme=queens_gambit_declined
+rnbqkb1r/ppp2ppp/4pn2/3p4/2PP4/2N5/PP2PPPP/R1BQKBNR w KQkq - 0 4 | id=op10 | theme=nimzo_preparation
+r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3 | id=op11 | theme=open_game_nc6
+rnbqkb1r/pp2pppp/2p2n2/3p4/3P4/2N5/PPP1PPPP/R1BQKBNR w KQkq - 0 4 | id=op12 | theme=slav_defence
+rnbqkb1r/ppp1pppp/5n2/3p4/2PP4/8/PP2PPPP/RNBQKBNR w KQkq - 1 3 | id=op13 | theme=queens_gambit_nc3
+rnbqkb1r/pppp1ppp/4pn2/8/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 3 | id=op14 | theme=french_defence
+rnbqkb1r/ppp1pppp/3p1n2/8/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 3 | id=op15 | theme=pirc_defence
+r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3 | id=op16 | theme=italian_nc6
+r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4 | id=op17 | theme=two_knights
+rnbqkb1r/ppp2ppp/3p1n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4 | id=op18 | theme=italian_d6
+rnbqk2r/pppp1ppp/4pn2/8/1bPP4/2N5/PP2PPPP/R1BQKBNR w KQkq - 2 4 | id=op19 | theme=nimzo_indian
+rnbqk2r/ppp1ppbp/3p1np1/8/2PPP3/2N5/PP3PPP/R1BQKBNR w KQkq - 0 5 | id=op20 | theme=kings_indian
+
