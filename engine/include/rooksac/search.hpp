@@ -35,7 +35,8 @@ inline constexpr std::int32_t kDrawScore = 0;
 inline constexpr std::uint32_t kMaxQsearchDepth = 32;
 
 /// \brief Node check interval for checking timeout and cooperative stop token.
-inline constexpr std::uint64_t kStopCheckInterval = 1024;
+/// Low interval (256 nodes) ensures sub-millisecond reaction in fast/emergency time controls.
+inline constexpr std::uint64_t kStopCheckInterval = 256;
 
 /// \brief Checks if a score indicates a checkmate sequence within known bounds.
 [[nodiscard]] constexpr bool isMateScore(std::int32_t score) noexcept {

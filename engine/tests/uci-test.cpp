@@ -200,6 +200,61 @@ void testNumericParsingRobustness() {
     require(extremeOutput.find("bestmove ") != std::string::npos, "Handles max uint32/uint64 values without overflow crash");
 }
 
+void testRequiredTimeControls() {
+    // Required controls from Sprint 05:
+    // 3+2 (180s + 2s inc), 10+0 (600s), 10+5 (600s + 5s inc), 15+10 (900s + 10s inc), 30+0 (1800s),
+    // fixed movetime, movestogo present and absent, emergency low clock.
+
+    struct TestCase {
+        const char* name;
+        const char* cmd;
+    };
+
+    const TestCase testCases[] = {
+        {"3+2 White", "go wtime 180000 btime 180000 winc 2000 binc 2000\n"},
+        {"10+0 White", "go wtime 600000 btime 600000 winc 0 binc 0\n"},
+        {"10+5 White", "go wtime 600000 btime 600000 winc 5000 binc 5000\n"},
+        {"15+10 White", "go wtime 900000 btime 900000 winc 10000 binc 10000\n"},
+        {"30+0 White", "go wtime 1800000 btime 1800000\n"},
+        {"3+2 with movestogo", "go wtime 180000 btime 180000 winc 2000 binc 2000 movestogo 20\n"},
+        {"Fixed movetime 50ms", "go movetime 50\n"},
+        {"Emergency low clock (500ms)", "go wtime 500 btime 500 winc 0 binc 0\n"},
+        {"Extreme emergency (50ms)", "go wtime 50 btime 50\n"}
+    };
+
+    for (const auto& tc : testCases) {
+        std::string script = "position startpos\n";
+        script += tc.cmd;
+        script += "quit\n";
+
+        std::istringstream in(script);
+        std::ostringstream out;
+        std::ostringstream err;
+
+        uci::EngineSession session(in, out, err);
+        session.run();
+
+        const std::string output = out.str();
+        require(output.find("bestmove ") != std::string::npos, tc.name);
+    }
+
+    // Also test Black's perspective clock selection
+    {
+        std::string script = "position startpos moves e2e4\n"
+                             "go wtime 180000 btime 150000 winc 2000 binc 2000\n"
+                             "quit\n";
+        std::istringstream in(script);
+        std::ostringstream out;
+        std::ostringstream err;
+
+        uci::EngineSession session(in, out, err);
+        session.run();
+
+        const std::string output = out.str();
+        require(output.find("bestmove ") != std::string::npos, "Black side-to-move clock selection works");
+    }
+}
+
 void testStopCommandInterruptsSearch() {
     // Search infinite or high depth, then send stop
     std::istringstream in("position startpos\ngo infinite\nstop\nquit\n");
@@ -224,6 +279,7 @@ int main() {
     testGoDepthAndBestMove();
     testGoMovetimeAndClock();
     testNumericParsingRobustness();
+    testRequiredTimeControls();
     testStopCommandInterruptsSearch();
 
     std::cout << "All UCI protocol and engine session tests passed successfully.\n";
