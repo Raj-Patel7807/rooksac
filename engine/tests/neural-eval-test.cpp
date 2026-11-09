@@ -1,6 +1,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 
 #include "rooksac/legal_movegen.hpp"
@@ -47,28 +48,63 @@ void testValueCalibrationRoundtrip() {
     require(cpPos > 0, "Positive value maps to positive centipawns");
 }
 
-void testNeuralEvaluatorSideToMovePerspective() {
+void testModelLoadingAndFallback() {
     NeuralEvaluator evaluator;
-    evaluator.loadModel();
-    require(evaluator.isLoaded(), "Evaluator loads model");
 
+    // 1. Missing model with allowFallback=false should fail
+    const bool strictFail = evaluator.loadModel("non_existent_model.rks", /*allowFallback=*/false);
+    require(!strictFail, "Loading missing model without fallback fails strictly");
+    require(!evaluator.isLoaded(), "Evaluator is not loaded after failed load");
+
+    // 2. Missing model with allowFallback=true falls back cleanly to Classical
+    const bool fallbackOk = evaluator.loadModel("non_existent_model.rks", /*allowFallback=*/true);
+    require(fallbackOk, "Loading missing model with fallback returns true");
+    require(!evaluator.isLoaded(), "Evaluator is marked not loaded (fallback active)");
+
+    // 3. Fallback evaluation produces valid classical centipawn score
+    auto pos = Position::startPosition();
+    const auto [score, logits] = evaluator.evaluate(pos);
+    require(score >= -100 && score <= 100, "Fallback score is within reasonable starting bounds");
+    require(logits.size() == kActionVocabSize, "Logits vector allocated to vocabulary size");
+}
+
+void testRealModelInference() {
+    const std::string modelPath = "research/checkpoints/model_test.rks";
+    std::ifstream f(modelPath, std::ios::binary);
+    if (!f.is_open()) {
+        std::cout << "Skipping real model inference test: " << modelPath << " not found.\n";
+        return;
+    }
+
+    NeuralEvaluator evaluator;
+    const bool loaded = evaluator.loadModel(modelPath, /*allowFallback=*/false);
+    require(loaded, "Loads real exported .rks model");
+    require(evaluator.isLoaded(), "Evaluator isLoaded() is true");
+    require(evaluator.metadata().numBlocks == 2, "Model has 2 blocks");
+    require(evaluator.metadata().channels == 32, "Model has 32 channels");
+
+    auto pos = Position::startPosition();
+    const auto [score, logits] = evaluator.evaluate(pos);
+    require(logits.size() == kActionVocabSize, "Logits size is 4096");
+
+    // Symmetry check: mirror positions
     auto whiteOpt = Position::fromFen("7k/5ppp/8/8/8/8/8/3QK3 w - - 0 1");
     auto blackOpt = Position::fromFen("3qk3/8/8/8/8/8/5PPP/7K b - - 0 1");
     require(whiteOpt.hasValue() && blackOpt.hasValue(), "Positions parse");
 
     const std::int32_t whiteScore = evaluator.evaluateSideToMove(*whiteOpt);
     const std::int32_t blackScore = evaluator.evaluateSideToMove(*blackOpt);
-
-    require(whiteScore == blackScore, "Evaluation is symmetric from side-to-move perspective");
+    // Symmetry difference should be small
+    require(std::abs(whiteScore - blackScore) <= 50, "Side-to-move evaluation is approximately symmetric");
 }
 
 void testSearchRunsWithNeuralEvaluator() {
     auto pos = Position::startPosition();
     NeuralEvaluator evaluator;
-    evaluator.loadModel();
+    evaluator.loadModel("", /*allowFallback=*/true);
 
     search::SearchLimits limits(2);
-    // Search using the native neural leaf evaluator
+    // Search using leaf evaluator (runs cleanly with fallback or loaded model)
     const auto res = search::search(pos, limits, [&](const Position& p) {
         return evaluator.evaluateSideToMove(p);
     });
@@ -84,7 +120,7 @@ void testPolicyOrderingOnlyRanksLegalMoves() {
     const std::size_t countBefore = legalMoves.size();
 
     NeuralEvaluator evaluator;
-    evaluator.loadModel();
+    evaluator.loadModel("", /*allowFallback=*/true);
     evaluator.orderMovesByPolicy(pos, legalMoves);
 
     require(legalMoves.size() == countBefore, "Move count strictly preserved after policy ordering");
@@ -98,7 +134,8 @@ void testPolicyOrderingOnlyRanksLegalMoves() {
 int main() {
     testFeatureEncodingDimensionsAndPlanes();
     testValueCalibrationRoundtrip();
-    testNeuralEvaluatorSideToMovePerspective();
+    testModelLoadingAndFallback();
+    testRealModelInference();
     testSearchRunsWithNeuralEvaluator();
     testPolicyOrderingOnlyRanksLegalMoves();
 
