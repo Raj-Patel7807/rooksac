@@ -1,18 +1,18 @@
 [
-  {
-    "game_id": "9b345308b01cf2a7",
-    "score": 0.0,
-    "result": "0-1",
-    "move_count": 47,
-    "white": "GreedyAgent",
-    "black": "NegamaxAgent"
-  },
-  {
-    "game_id": "9b89dfc8fcfeb1c6",
-    "score": 1.0,
-    "result": "1-0",
-    "move_count": 21,
-    "white": "NegamaxAgent",
-    "black": "GreedyAgent"
-  }
+    {
+        "game_id": "9b345308b01cf2a7",
+        "score": 0.0,
+        "result": "0-1",
+        "move_count": 47,
+        "white": "GreedyAgent",
+        "black": "NegamaxAgent"
+    },
+    {
+        "game_id": "9b89dfc8fcfeb1c6",
+        "score": 1.0,
+        "result": "1-0",
+        "move_count": 21,
+        "white": "NegamaxAgent",
+        "black": "GreedyAgent"
+    }
 ]

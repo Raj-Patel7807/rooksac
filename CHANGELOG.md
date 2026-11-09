@@ -9,6 +9,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+
 - Per-depth UCI `info depth … score cp … nodes … nps … time … pv` lines emitted after every
   completed iterative-deepening iteration, matching standard GUI expectations.
 - `DepthCallback` type alias in `search.hpp`; optional 7th parameter on `search::search()`.
@@ -22,6 +23,7 @@ First complete, production-ready release of the RookSac chess engine and web app
 ### Engine (C++20)
 
 #### Added
+
 - Core chess primitives: `Square`, `Piece`, `Color`, `Move` (compact 16-bit encoding), `MoveList`
   bounded stack, bitboard helpers, and compile-time leaper attack tables.
 - `Position` with piece bitboards, square mailbox, side-to-move, castling rights, en-passant
@@ -60,6 +62,7 @@ First complete, production-ready release of the RookSac chess engine and web app
 ### Backend (Python / FastAPI)
 
 #### Added
+
 - FastAPI service with `/api/v1/health`, `/api/v1/analysis`, `/api/v1/pgn/import` endpoints.
 - `BoundedEnginePool` with persistent UCI worker processes; eliminates ~800 ms per-request
   startup overhead.
@@ -71,12 +74,14 @@ First complete, production-ready release of the RookSac chess engine and web app
 ### Frontend (React / TypeScript)
 
 #### Added
+
 - React TypeScript chess application: interactive board, play mode, analysis mode, and saved games.
 - Production build with Vite; unit tests with Vitest.
 
 ### Infrastructure
 
 #### Added
+
 - CMake C++20 build with Ninja; `cmake --preset release` and `cmake --preset debug`.
 - CTest suite: 13 test targets across primitives, position, movegen, perft, agents, search, UCI,
   transposition table, evaluation, tuning, neural evaluation, and NNUE.
@@ -88,15 +93,14 @@ First complete, production-ready release of the RookSac chess engine and web app
 
 ### Performance (measured on release build, GCC 14.2.0)
 
-| Benchmark | Before | After |
-|-----------|--------|-------|
-| `rooksac_bench` depth-4 NPS | ~1 383 000 | ~1 469 000 (+6%) |
-| Startpos depth 8 wall time | ~800 ms (incl. startup) | 112 ms |
-| Kiwipete depth 8 wall time | ~2 260 ms | ~1 780 ms (−21%) |
-| Backend per-request startup | ~800 ms | ~0 ms (persistent pool) |
+| Benchmark                   | Before                  | After                   |
+| --------------------------- | ----------------------- | ----------------------- |
+| `rooksac_bench` depth-4 NPS | ~1 383 000              | ~1 469 000 (+6%)        |
+| Startpos depth 8 wall time  | ~800 ms (incl. startup) | 112 ms                  |
+| Kiwipete depth 8 wall time  | ~2 260 ms               | ~1 780 ms (−21%)        |
+| Backend per-request startup | ~800 ms                 | ~0 ms (persistent pool) |
 
 ---
 
 [Unreleased]: https://github.com/Raj-Patel7807/rooksac/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/Raj-Patel7807/rooksac/releases/tag/v0.1.0
-

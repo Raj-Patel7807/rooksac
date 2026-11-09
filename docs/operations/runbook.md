@@ -3,6 +3,7 @@
 ## 1. Production Architecture Overview
 
 The RookSac deployment comprises four isolated service tiers interconnected through a private Docker bridge network:
+
 - **Frontend**: Nginx reverse proxy serving minified React SPA assets and proxying `/api` and `/ws` to the backend.
 - **Backend**: FastAPI async service orchestrating the native C++20 UCI engine pool (`rooksac`).
 - **Database (db)**: PostgreSQL 16 database storing user profiles and game histories (not publicly exposed).
@@ -32,11 +33,13 @@ docker compose -f deploy/docker/docker-compose.yml logs -f backend
 ## 4. Backup & Restore Procedures
 
 ### Database Backup
+
 ```bash
 docker exec -t rooksac-db pg_dump -U rooksac_user rooksac_db | gzip > backup_$(date +%Y%m%d_%H%M%S).sql.gz
 ```
 
 ### Database Restore Rehearsal
+
 ```bash
 # Decompress and restore into database
 gunzip -c backup_20261102_100000.sql.gz | docker exec -i rooksac-db psql -U rooksac_user -d rooksac_db
@@ -45,6 +48,7 @@ gunzip -c backup_20261102_100000.sql.gz | docker exec -i rooksac-db psql -U rook
 ## 5. Rollback Plan
 
 If an issue arises after deploying an updated image:
+
 ```bash
 # Revert image tag in docker-compose.yml and restart
 docker compose -f deploy/docker/docker-compose.yml down

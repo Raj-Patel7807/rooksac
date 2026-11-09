@@ -39,6 +39,7 @@ flowchart LR
 ## Build and Testing
 
 ### Prerequisites
+
 - **C++ Compiler**: GCC 14+, Clang 16+, or MSVC 2022 (C++20 required)
 - **Build Tools**: CMake 3.23+ and Ninja
 - **Python**: 3.12+ (managed via [uv](https://docs.astral.sh/uv/))

@@ -7,6 +7,7 @@ This document tracks empirical playing strength measurements across sprints and 
 ## Controlled Evaluation Criteria
 
 All records below conform to the protocol defined in [`docs/match_config.md`](match_config.md):
+
 - **Concurrency**: 1 thread
 - **Transposition Table**: 16 MB
 - **Adjudication**: Standard chess rules (checkmate, stalemate, 50-move rule, insufficient material)
@@ -17,9 +18,9 @@ All records below conform to the protocol defined in [`docs/match_config.md`](ma
 
 ## Progression Table
 
-| Match ID | Date | Candidate | Baseline | Conditions | Score (W/D/L) | Score % | $\Delta\text{Elo}$ [95% CI] | SPRT Decision | Artifact |
-|:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|
-| **M-001** | 2026-11-09 | `NegamaxAgent` (depth 2) | `GreedyAgent` | Fixed Depth 2, 20 openings, paired | 20 / 0 / 0 | 100.0% | $+\infty$ [$+\infty$, $+2400.0$] | **ACCEPT H1** (Candidate stronger) | `docs/benchmarks/sprint06_internal.pgn` |
+| Match ID  | Date       | Candidate                | Baseline      | Conditions                         | Score (W/D/L) | Score % | $\Delta\text{Elo}$ [95% CI]      | SPRT Decision                      | Artifact                                |
+| :-------- | :--------- | :----------------------- | :------------ | :--------------------------------- | :------------ | :------ | :------------------------------- | :--------------------------------- | :-------------------------------------- |
+| **M-001** | 2026-11-09 | `NegamaxAgent` (depth 2) | `GreedyAgent` | Fixed Depth 2, 20 openings, paired | 20 / 0 / 0    | 100.0%  | $+\infty$ [$+\infty$, $+2400.0$] | **ACCEPT H1** (Candidate stronger) | `docs/benchmarks/sprint06_internal.pgn` |
 
 ---
 

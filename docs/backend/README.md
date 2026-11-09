@@ -11,10 +11,10 @@ RookSac provides a modular FastAPI web service located in `app/backend/`. It exp
 
 ## Endpoints
 
-| Method | Path | Description |
-| --- | --- | --- |
-| `GET` | `/api/v1/health` | Service health status, version, and active worker count |
-| `POST` | `/api/v1/analysis` | Submits FEN for depth-limited or time-limited analysis |
+| Method | Path                 | Description                                               |
+| ------ | -------------------- | --------------------------------------------------------- |
+| `GET`  | `/api/v1/health`     | Service health status, version, and active worker count   |
+| `POST` | `/api/v1/analysis`   | Submits FEN for depth-limited or time-limited analysis    |
 | `POST` | `/api/v1/pgn/import` | Ingests PGN games and validates header and move integrity |
 
 ## Running the Backend

@@ -7,6 +7,7 @@ Evaluation estimates a position’s desirability when search does not reach a te
 ## Implemented Architecture
 
 RookSac implements a modern classical tapered evaluation framework (`rooksac::eval`):
+
 - **Centipawn Scale**: 100 cp = 1 pawn.
 - **Perspective Convention**: Absolute evaluations compute from White's perspective (positive favors White, negative favors Black). Side-to-move evaluations (`evaluateSideToMove()`) return positive scores favoring the active side.
 - **Tapered Score Representation (`eval::Score`)**: Every term accumulates a pair of values `(mg, eg)` representing Middlegame and Endgame evaluations.
@@ -16,23 +17,23 @@ RookSac implements a modern classical tapered evaluation framework (`rooksac::ev
 ## Modular Evaluation Features
 
 1. **Material & Piece-Square Tables (PSTs)**:
-   - Configurable piece values and 64-square tables for each piece type.
-   - Colour-mirrored for Black: $\text{squareIndex} \oplus 56$.
+    - Configurable piece values and 64-square tables for each piece type.
+    - Colour-mirrored for Black: $\text{squareIndex} \oplus 56$.
 2. **Pawn Structure**:
-   - Doubled pawn penalties (multiple pawns on the same file).
-   - Isolated pawn penalties (no friendly pawns on adjacent files).
-   - Passed pawn bonuses scaled by advancement rank, with higher bonuses in the endgame.
+    - Doubled pawn penalties (multiple pawns on the same file).
+    - Isolated pawn penalties (no friendly pawns on adjacent files).
+    - Passed pawn bonuses scaled by advancement rank, with higher bonuses in the endgame.
 3. **King Safety**:
-   - Missing shield pawn penalties on ranks 2 and 3 near castled kings.
-   - Semi-open file penalties near the king in the middlegame.
+    - Missing shield pawn penalties on ranks 2 and 3 near castled kings.
+    - Semi-open file penalties near the king in the middlegame.
 4. **Piece Activity & Mobility**:
-   - Bishop pair bonus.
-   - Rook activity bonuses on open (no pawns) and semi-open (only enemy pawns) files.
-   - Safe piece mobility counting legal/pseudo-legal rays avoiding enemy pawn attacks.
+    - Bishop pair bonus.
+    - Rook activity bonuses on open (no pawns) and semi-open (only enemy pawns) files.
+    - Safe piece mobility counting legal/pseudo-legal rays avoiding enemy pawn attacks.
 5. **Centralized Tunable Parameters**:
-   - All weights are encapsulated in `eval::EvalParameters` (`eval_types.hpp`), enabling structured parameter management and future automated tuning.
+    - All weights are encapsulated in `eval::EvalParameters` (`eval_types.hpp`), enabling structured parameter management and future automated tuning.
 6. **Baseline Evaluator Retained**:
-   - `eval::evaluateMaterial()` and `eval::evaluateMaterialSideToMove()` remain available for benchmark testing and baseline agents.
+    - `eval::evaluateMaterial()` and `eval::evaluateMaterialSideToMove()` remain available for benchmark testing and baseline agents.
 
 ## Performance and Throughput
 

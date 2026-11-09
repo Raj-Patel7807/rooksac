@@ -2,15 +2,15 @@
 
 ## Planned subsystems
 
-| Subsystem | Responsibility | Primary collaborators |
-| --- | --- | --- |
-| Position | Own complete chess state and make/unmake state transitions. | FEN, move generation, search, hashing |
-| Move generation | Produce pseudo-legal moves and establish legal-move filtering. | Position, attack queries, perft |
-| Evaluation | Score a position from the side-to-move perspective. | Search, position |
-| Search | Explore moves, maintain bounds, choose a principal variation. | Moves, evaluation, TT, time |
-| Hash/TT | Identify position state and cache bounded search results. | Position, search |
-| Time management | Set and enforce search stopping conditions. | UCI, search |
-| UCI | Translate line-oriented protocol input/output at the boundary. | Position, search, options |
+| Subsystem       | Responsibility                                                 | Primary collaborators                 |
+| --------------- | -------------------------------------------------------------- | ------------------------------------- |
+| Position        | Own complete chess state and make/unmake state transitions.    | FEN, move generation, search, hashing |
+| Move generation | Produce pseudo-legal moves and establish legal-move filtering. | Position, attack queries, perft       |
+| Evaluation      | Score a position from the side-to-move perspective.            | Search, position                      |
+| Search          | Explore moves, maintain bounds, choose a principal variation.  | Moves, evaluation, TT, time           |
+| Hash/TT         | Identify position state and cache bounded search results.      | Position, search                      |
+| Time management | Set and enforce search stopping conditions.                    | UCI, search                           |
+| UCI             | Translate line-oriented protocol input/output at the boundary. | Position, search, options             |
 
 ## Interfaces and dependencies
 

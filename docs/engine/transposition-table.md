@@ -7,17 +7,19 @@ Different move sequences often lead to identical board positions (transpositions
 ## Zobrist Hashing Architecture
 
 RookSac uses deterministic 64-bit Zobrist hashing (`rooksac::zobrist`):
+
 - **Components XORed**:
-  - Piece-square keys for each of 12 piece types across 64 squares ($12 \times 64$).
-  - Side to move key (XORed if Black is to move).
-  - Castling rights keys (16 possible binary configurations of White/Black Kingside/Queenside).
-  - En-passant file keys ($0..7$ for target files).
+    - Piece-square keys for each of 12 piece types across 64 squares ($12 \times 64$).
+    - Side to move key (XORed if Black is to move).
+    - Castling rights keys (16 possible binary configurations of White/Black Kingside/Queenside).
+    - En-passant file keys ($0..7$ for target files).
 - **Incremental Maintenance**: The Zobrist hash is maintained incrementally with $\mathcal{O}(1)$ XOR operations inside `Position::makeMove()` and restored upon `Position::unmakeMove()` using `UndoState::zobristHash`.
 - **Integrity Validation**: `zobrist::computeHash()` is provided to compute the key from scratch. In debug and testing builds, `Position::checkInvariants()` asserts that the incremental hash exactly matches `computeHash()`.
 
 ## Transposition Table Design
 
 `rooksac::tt::TranspositionTable` is a cache allocated as a flat array of 16-byte `Entry` structs:
+
 - **`key` (64-bit)**: Full 64-bit verification key to eliminate collision misplays.
 - **`move` (16-bit)**: Encoded best move for move ordering prioritization.
 - **`score` (16-bit)**: Normalized centipawn score or mate score.
@@ -34,6 +36,7 @@ Upon probing, the reverse translation is applied to restore correct distance rel
 ### Replacement Policy
 
 Entries are replaced when:
+
 1. The table slot is uninitialized (`Bound::None`).
 2. The stored key matches the probe key.
 3. The new search depth is greater than or equal to the stored entry depth (`depth >= entry.depth`).

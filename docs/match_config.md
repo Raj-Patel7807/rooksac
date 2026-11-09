@@ -10,15 +10,15 @@ All engine-vs-engine evaluations must adhere to these controlled parameters. Com
 
 ## 2. Fixed Hardware & Environmental Controls
 
-| Parameter | Standard Setting | Rationale |
-|:---|:---|:---|
-| **OS** | Windows 11 / Linux x86-64 | Operating system under test |
-| **Compiler** | GCC 14.2.0 (`-O3 -DNDEBUG -std=c++20`) | Default release toolchain |
-| **Concurrency / Threads** | 1 thread (`Threads = 1`) | Prevents search nondeterminism and CPU throttling interference |
-| **Transposition Table** | 16 MB (`Hash = 16`) | Uniform memory footprint across match runs |
-| **Pondering** | Off (`Ponder = false`) | Eliminates out-of-turn compute advantages |
-| **Adjudication (Draw)** | 50-move rule, threefold repetition, material draw | Standard FIDE rules strictly enforced |
-| **Adjudication (Plies)** | 200 plies cutoff | Bound runtime on non-terminating endgames |
+| Parameter                 | Standard Setting                                  | Rationale                                                      |
+| :------------------------ | :------------------------------------------------ | :------------------------------------------------------------- |
+| **OS**                    | Windows 11 / Linux x86-64                         | Operating system under test                                    |
+| **Compiler**              | GCC 14.2.0 (`-O3 -DNDEBUG -std=c++20`)            | Default release toolchain                                      |
+| **Concurrency / Threads** | 1 thread (`Threads = 1`)                          | Prevents search nondeterminism and CPU throttling interference |
+| **Transposition Table**   | 16 MB (`Hash = 16`)                               | Uniform memory footprint across match runs                     |
+| **Pondering**             | Off (`Ponder = false`)                            | Eliminates out-of-turn compute advantages                      |
+| **Adjudication (Draw)**   | 50-move rule, threefold repetition, material draw | Standard FIDE rules strictly enforced                          |
+| **Adjudication (Plies)**  | 200 plies cutoff                                  | Bound runtime on non-terminating endgames                      |
 
 ---
 
@@ -30,20 +30,20 @@ Matches must use paired openings where every opening is played twice with swappe
 - **Count**: 20 distinct opening positions
 - **Provenance**: Standard public domain theoretical lines (e.g. Italian, Sicilian, French, QGD, Nimzo-Indian, King's Indian).
 - **SHA-256 Digest**:
-  ```
-  2ACAF3EC5DB72109B5B4D01D7E77FD7F5FF5826530139AE8B84A9F8B834E3372
-  ```
+    ```
+    2ACAF3EC5DB72109B5B4D01D7E77FD7F5FF5826530139AE8B84A9F8B834E3372
+    ```
 
 ---
 
 ## 4. Time Controls
 
-| Category | Time Control | Use Case |
-|:---|:---|:---|
-| **Fixed Depth** | Depth 2 / 3 / 4 | Fast CI regression checks and algorithmic tests |
-| **Fixed Move Time** | `movetime 50` / `movetime 100` | Rapid internal sanity tests |
-| **Blitz Time Control** | 3 min + 2s increment (`wtime 180000 winc 2000`) | Standard playing strength baseline |
-| **Rapid Time Control** | 10 min + 0s increment (`wtime 600000 winc 0`) | High-confidence rating qualification |
+| Category               | Time Control                                    | Use Case                                        |
+| :--------------------- | :---------------------------------------------- | :---------------------------------------------- |
+| **Fixed Depth**        | Depth 2 / 3 / 4                                 | Fast CI regression checks and algorithmic tests |
+| **Fixed Move Time**    | `movetime 50` / `movetime 100`                  | Rapid internal sanity tests                     |
+| **Blitz Time Control** | 3 min + 2s increment (`wtime 180000 winc 2000`) | Standard playing strength baseline              |
+| **Rapid Time Control** | 10 min + 0s increment (`wtime 600000 winc 0`)   | High-confidence rating qualification            |
 
 ---
 
@@ -59,16 +59,18 @@ Candidate release versions are accepted or rejected using Wald's SPRT:
 - **Upper boundary**: $A = \ln((1 - \beta) / \alpha) \approx +2.944$
 
 ### Acceptance Rules:
+
 1. **$LLR \ge A$**: Accept $H_1$. Candidate is accepted and merged.
 2. **$LLR \le B$**: Accept $H_0$. Candidate is rejected.
 3. **$B < LLR < A$**: Inconclusive. Match continues until boundary hit or game ceiling reached.
-4. *Small-sample optimism is forbidden*: Do not claim rating gains from small sample size runs without hitting SPRT or achieving statistical significance (95% CI strictly positive).
+4. _Small-sample optimism is forbidden_: Do not claim rating gains from small sample size runs without hitting SPRT or achieving statistical significance (95% CI strictly positive).
 
 ---
 
 ## 6. Execution Commands
 
 ### Internal Match Harness (Built-in)
+
 ```powershell
 # Run 20 paired games between Negamax and Greedy:
 ./build/rooksac_match_harness.exe --white negamax --black greedy --depth 2 --games 20 --openings tools/openings.epd --pgn docs/benchmarks/sprint06_internal.pgn
@@ -78,6 +80,7 @@ python tools/sprt_match.py --pgn docs/benchmarks/sprint06_internal.pgn --elo0 0 
 ```
 
 ### Cute Chess CLI (External Engine Match)
+
 ```bash
 cutechess-cli \
   -engine cmd=./build/rooksac.exe name=RookSac_Candidate \
@@ -91,6 +94,7 @@ cutechess-cli \
 ```
 
 ### Fastchess Integration
+
 ```bash
 fastchess \
   -engine cmd=./build/rooksac.exe name=RookSac_Candidate \

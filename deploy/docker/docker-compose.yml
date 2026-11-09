@@ -1,80 +1,80 @@
 services:
-  backend:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.backend
-    container_name: rooksac-backend
-    restart: unless-stopped
-    environment:
-      - ENVIRONMENT=production
-      - ENGINE_BINARY_PATH=/opt/rooksac/bin/rooksac
-      - MAX_CONCURRENT_WORKERS=4
-      - JOB_TIMEOUT_SECONDS=30.0
-      - DATABASE_URL=postgresql://rooksac_user:${DB_PASSWORD:-securepassword}@db:5432/rooksac_db
-      - REDIS_URL=redis://redis:6379/0
-      - ALLOWED_ORIGINS=http://localhost:8080,https://rooksac.example.com
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - internal-net
-    expose:
-      - "8000"
+    backend:
+        build:
+            context: ../..
+            dockerfile: deploy/docker/Dockerfile.backend
+        container_name: rooksac-backend
+        restart: unless-stopped
+        environment:
+            - ENVIRONMENT=production
+            - ENGINE_BINARY_PATH=/opt/rooksac/bin/rooksac
+            - MAX_CONCURRENT_WORKERS=4
+            - JOB_TIMEOUT_SECONDS=30.0
+            - DATABASE_URL=postgresql://rooksac_user:${DB_PASSWORD:-securepassword}@db:5432/rooksac_db
+            - REDIS_URL=redis://redis:6379/0
+            - ALLOWED_ORIGINS=["http://localhost:8080","https://rooksac.example.com"]
+        depends_on:
+            db:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        networks:
+            - internal-net
+        expose:
+            - "8000"
 
-  frontend:
-    build:
-      context: ../..
-      dockerfile: deploy/docker/Dockerfile.frontend
-    container_name: rooksac-frontend
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    depends_on:
-      - backend
-    networks:
-      - internal-net
+    frontend:
+        build:
+            context: ../..
+            dockerfile: deploy/docker/Dockerfile.frontend
+        container_name: rooksac-frontend
+        restart: unless-stopped
+        ports:
+            - "8080:8080"
+        depends_on:
+            - backend
+        networks:
+            - internal-net
 
-  db:
-    image: postgres:16-alpine
-    container_name: rooksac-db
-    restart: unless-stopped
-    environment:
-      - POSTGRES_USER=rooksac_user
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-securepassword}
-      - POSTGRES_DB=rooksac_db
-    volumes:
-      - db-data:/var/lib/postgresql/data
-    networks:
-      - internal-net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rooksac_user -d rooksac_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    # Not exposed publicly; reachable only via internal-net
+    db:
+        image: postgres:16-alpine
+        container_name: rooksac-db
+        restart: unless-stopped
+        environment:
+            - POSTGRES_USER=rooksac_user
+            - POSTGRES_PASSWORD=${DB_PASSWORD:-securepassword}
+            - POSTGRES_DB=rooksac_db
+        volumes:
+            - db-data:/var/lib/postgresql/data
+        networks:
+            - internal-net
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U rooksac_user -d rooksac_db"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        # Not exposed publicly; reachable only via internal-net
 
-  redis:
-    image: redis:7-alpine
-    container_name: rooksac-redis
-    restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
-    volumes:
-      - redis-data:/data
-    networks:
-      - internal-net
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-    # Not exposed publicly; reachable only via internal-net
+    redis:
+        image: redis:7-alpine
+        container_name: rooksac-redis
+        restart: unless-stopped
+        command: ["redis-server", "--appendonly", "yes"]
+        volumes:
+            - redis-data:/data
+        networks:
+            - internal-net
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 3s
+            retries: 5
+        # Not exposed publicly; reachable only via internal-net
 
 networks:
-  internal-net:
-    driver: bridge
+    internal-net:
+        driver: bridge
 
 volumes:
-  db-data:
-  redis-data:
+    db-data:
+    redis-data:

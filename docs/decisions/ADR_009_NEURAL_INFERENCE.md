@@ -15,19 +15,21 @@ RookSac trains dual-headed convolutional residual neural networks (`PolicyValueN
 ## 2. Decision Options Considered
 
 ### Option A: External ONNX Runtime C++ Library
+
 - **Pros**: Direct consumption of `.onnx` models exported by PyTorch.
-- **Cons**: 
-  - Adds ~15–30 MB dynamic binary dependency (`onnxruntime.dll` / `.so`).
-  - Significant cross-compilation complexity on MinGW-w64 and CI environments.
-  - Runtime overhead of session setup and tensor copying on every leaf node in CPU tree search.
+- **Cons**:
+    - Adds ~15–30 MB dynamic binary dependency (`onnxruntime.dll` / `.so`).
+    - Significant cross-compilation complexity on MinGW-w64 and CI environments.
+    - Runtime overhead of session setup and tensor copying on every leaf node in CPU tree search.
 
 ### Option B: Native Portable C++ Forward-Pass Inference Engine (`.rks` Binary Format)
+
 - **Pros**:
-  - Zero external dynamic library dependencies; compiles uniformly on all platforms with standard C++20.
-  - Memory-safe, statically checked tensor operations without dynamic memory allocations in the inner search loop.
-  - Strict header format with magic number (`RKS1`), schema version, layer dimensions, and SHA-256 integrity checksum.
-  - Allows exact numeric parity verification against PyTorch.
-  - Extremely compact disk footprint and fast startup.
+    - Zero external dynamic library dependencies; compiles uniformly on all platforms with standard C++20.
+    - Memory-safe, statically checked tensor operations without dynamic memory allocations in the inner search loop.
+    - Strict header format with magic number (`RKS1`), schema version, layer dimensions, and SHA-256 integrity checksum.
+    - Allows exact numeric parity verification against PyTorch.
+    - Extremely compact disk footprint and fast startup.
 - **Cons**: Requires explicit C++ implementation of convolution, batchnorm, residual addition, and dense forward passes.
 
 ---
@@ -37,18 +39,19 @@ RookSac trains dual-headed convolutional residual neural networks (`PolicyValueN
 We choose **Option B: A genuine, native C++ forward-pass inference engine with portable binary export (`.rks`)**.
 
 ### Model File Format Specification (`.rks` - RookSac Model File):
+
 1. **Magic Header** (8 bytes): `ROOKSAC1`
 2. **Version** (uint32_t): `1`
 3. **Architecture Info**:
-   - `in_channels` (uint32_t): 18
-   - `num_blocks` (uint32_t): residual blocks count
-   - `channels` (uint32_t): feature channels
-   - `num_actions` (uint32_t): 4096
+    - `in_channels` (uint32_t): 18
+    - `num_blocks` (uint32_t): residual blocks count
+    - `channels` (uint32_t): feature channels
+    - `num_actions` (uint32_t): 4096
 4. **Weights Payload** (IEEE 754 float32 little-endian):
-   - `conv_in` (weights: `[channels, in_channels, 3, 3]`, biases: `[channels]`)
-   - Residual blocks (weights + biases for conv1, conv2)
-   - `policy_head` (conv 1x1 + dense 4096)
-   - `value_head` (conv 1x1 + dense 64 + dense 1)
+    - `conv_in` (weights: `[channels, in_channels, 3, 3]`, biases: `[channels]`)
+    - Residual blocks (weights + biases for conv1, conv2)
+    - `policy_head` (conv 1x1 + dense 4096)
+    - `value_head` (conv 1x1 + dense 64 + dense 1)
 5. **CRC32 / Checksum** for structural validation.
 
 ---

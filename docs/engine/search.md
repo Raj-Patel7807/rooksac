@@ -4,18 +4,18 @@
 
 Search explores legal move trees to select a move. RookSac plans this progression: Negamax; alpha-beta pruning; move ordering; iterative deepening; quiescence search; transposition tables and Zobrist hashing; principal variation search; aspiration windows; killer moves and history heuristics; then only justified advanced work.
 
-| Technique | Status | Problem solved / expected benefit | Trade-off |
-| --- | --- | --- | --- |
-| Negamax | Implemented | Uniform two-player score recursion with mate distance | Explores all branches; large tree. |
-| Alpha-beta | Implemented | Cuts branches that cannot affect the result | Depends heavily on ordering. |
-| Ordering | Implemented | Finds useful cutoffs earlier | Staging and scoring overhead. |
-| Iterative deepening | Implemented | Produces usable partial results and ordering | Repeats shallow work. |
-| Quiescence | Implemented | Reduces unstable capture-horizon errors | Can grow excessively without limits. |
-| TT / hashing | Implemented | Reuses repeated-position search | Needs correct keys and bounds. |
-| PVS / aspiration | Implemented | Narrows common-case search windows | Requires robust re-search behavior. |
-| Killer / history | Implemented (killers) | Learns ordering from prior cutoffs | Can bias ordering and needs aging policy. |
-| Null-move pruning | Implemented | Fast forward-pruning on strong positions | Zugzwang risk without safeguards. |
-| LMR | Implemented | Reduces depth of late quiet moves | Requires full re-search on fail-high. |
+| Technique           | Status                | Problem solved / expected benefit                     | Trade-off                                 |
+| ------------------- | --------------------- | ----------------------------------------------------- | ----------------------------------------- |
+| Negamax             | Implemented           | Uniform two-player score recursion with mate distance | Explores all branches; large tree.        |
+| Alpha-beta          | Implemented           | Cuts branches that cannot affect the result           | Depends heavily on ordering.              |
+| Ordering            | Implemented           | Finds useful cutoffs earlier                          | Staging and scoring overhead.             |
+| Iterative deepening | Implemented           | Produces usable partial results and ordering          | Repeats shallow work.                     |
+| Quiescence          | Implemented           | Reduces unstable capture-horizon errors               | Can grow excessively without limits.      |
+| TT / hashing        | Implemented           | Reuses repeated-position search                       | Needs correct keys and bounds.            |
+| PVS / aspiration    | Implemented           | Narrows common-case search windows                    | Requires robust re-search behavior.       |
+| Killer / history    | Implemented (killers) | Learns ordering from prior cutoffs                    | Can bias ordering and needs aging policy. |
+| Null-move pruning   | Implemented           | Fast forward-pruning on strong positions              | Zugzwang risk without safeguards.         |
+| LMR                 | Implemented           | Reduces depth of late quiet moves                     | Requires full re-search on fail-high.     |
 
 ## Implemented architecture
 
@@ -32,12 +32,12 @@ Iterative-deepening Alpha-Beta search with quiescence, PV-first move ordering, a
 - **Quiescence Search:** At `depth == 0`, `alphaBetaInternal` calls `quiescenceInternal` rather than returning the static evaluation. Quiescence expands capture moves, stands pat when the current evaluation is already good enough (stand-pat pruning), and returns to a quiet position before evaluating. Checks in quiescence are expanded fully. Maximum quiescence depth is `kMaxQsearchDepth` (32).
 - **PV-First Move Ordering:** The principal variation move from the previous iteration is passed to `orderMoves` and scored at `kPvMoveBaseScore` (40,000), placing it above all other moves.
 - **Staged Move Ordering:** All non-PV moves are scored before branching:
-  1. Capture + Promotion (30,000+)
-  2. Promotion (20,000+)
-  3. MVV-LVA Captures (10,000+)
-  4. Killer Moves (5,000+)
-  5. Quiet moves (0)
-  Moves within each bucket preserve their stable generation order.
+    1. Capture + Promotion (30,000+)
+    2. Promotion (20,000+)
+    3. MVV-LVA Captures (10,000+)
+    4. Killer Moves (5,000+)
+    5. Quiet moves (0)
+       Moves within each bucket preserve their stable generation order.
 - **Fail-Soft Alpha-Beta:** Implements fail-soft bounds ($\alpha, \beta$). On beta cutoff ($s \ge \beta$), search terminates early and reports the cut score and increments `stats.cutoffs`.
 - **Minimax Differential Verification:** Plain `searchMinimax` (no quiescence, no pruning) is maintained alongside `search` to prove search correctness on quiet positions.
 - **Terminal States Before Leaf Evaluation:** Terminal conditions (50-move draw, checkmate, stalemate) are evaluated before checking `depth == 0`.

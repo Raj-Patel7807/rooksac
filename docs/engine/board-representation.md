@@ -11,6 +11,7 @@ RookSac uses `a1 = 0` through `h8 = 63`: files increase from `a` to `h` and rank
 Moves compactly encode source, target, and optional knight/bishop/rook/queen promotion.
 
 The `Position` class manages piece bitboards by `[color][piece_type]`, aggregate `colorOccupancy` bitboards, `totalOccupancy`, and a 64-square `mailbox_` array for O(1) piece lookup. It encapsulates:
+
 - Side to move (`Color`)
 - Castling rights (`CastlingRights` bitflags: `WK`, `WQ`, `BK`, `BQ`)
 - En-passant target square (`Square`)

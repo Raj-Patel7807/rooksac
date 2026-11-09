@@ -1,34 +1,34 @@
 [
-  {
-    "game_id": "9cf418e3044f2d68",
-    "score": 1.0,
-    "result": "1-0",
-    "move_count": 21,
-    "white": "NegamaxAgent",
-    "black": "GreedyAgent"
-  },
-  {
-    "game_id": "bf16c1a9904f0402",
-    "score": 1.0,
-    "result": "1-0",
-    "move_count": 23,
-    "white": "NegamaxAgent",
-    "black": "GreedyAgent"
-  },
-  {
-    "game_id": "bfce73e042485f8f",
-    "score": 1.0,
-    "result": "1-0",
-    "move_count": 57,
-    "white": "NegamaxAgent",
-    "black": "GreedyAgent"
-  },
-  {
-    "game_id": "dab605b3222d39f2",
-    "score": 0.0,
-    "result": "0-1",
-    "move_count": 48,
-    "white": "GreedyAgent",
-    "black": "NegamaxAgent"
-  }
+    {
+        "game_id": "9cf418e3044f2d68",
+        "score": 1.0,
+        "result": "1-0",
+        "move_count": 21,
+        "white": "NegamaxAgent",
+        "black": "GreedyAgent"
+    },
+    {
+        "game_id": "bf16c1a9904f0402",
+        "score": 1.0,
+        "result": "1-0",
+        "move_count": 23,
+        "white": "NegamaxAgent",
+        "black": "GreedyAgent"
+    },
+    {
+        "game_id": "bfce73e042485f8f",
+        "score": 1.0,
+        "result": "1-0",
+        "move_count": 57,
+        "white": "NegamaxAgent",
+        "black": "GreedyAgent"
+    },
+    {
+        "game_id": "dab605b3222d39f2",
+        "score": 0.0,
+        "result": "0-1",
+        "move_count": 48,
+        "white": "GreedyAgent",
+        "black": "NegamaxAgent"
+    }
 ]

@@ -7,10 +7,10 @@ RookSac includes an offline PyTorch-based supervised policy-value training pipel
 The policy-value network is an AlphaZero-style convolutional residual architecture with separate policy and value output heads:
 
 - **Input Tensor:** $18 \times 8 \times 8$ bitplane representation:
-  - 12 piece planes (P, N, B, R, Q, K for White; p, n, b, r, q, k for Black)
-  - 1 side-to-move plane (all 1s if White, all 0s if Black)
-  - 4 castling right planes (White Kingside, White Queenside, Black Kingside, Black Queenside)
-  - 1 en-passant file plane
+    - 12 piece planes (P, N, B, R, Q, K for White; p, n, b, r, q, k for Black)
+    - 1 side-to-move plane (all 1s if White, all 0s if Black)
+    - 4 castling right planes (White Kingside, White Queenside, Black Kingside, Black Queenside)
+    - 1 en-passant file plane
 - **Backbone:** Initial $3 \times 3$ convolution to $N$ filters (default 64) with batch normalization and ReLU, followed by a sequence of residual blocks.
 - **Policy Head:** $1 \times 1$ convolution, batch normalization, ReLU, and linear projection to 4,096 policy logits (source square $0..63 \times$ destination square $0..63$).
 - **Value Head:** $1 \times 1$ convolution, batch normalization, ReLU, linear layers with tanh activation yielding a scalar $v \in [-1, 1]$ representing expected outcome from White's perspective.

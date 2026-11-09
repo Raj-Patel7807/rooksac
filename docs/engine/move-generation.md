@@ -7,6 +7,7 @@ Pseudo-legal moves obey how pieces move but may leave the moving side’s king i
 ## Implemented legal move generation and Perft certification
 
 RookSac implements:
+
 - Precomputed `constexpr` lookup tables for pawn attacks, knight attacks, and king attacks.
 - Robust 4-direction ray stepping for bishop and rook attacks, with queen attacks defined as their union.
 - Attack predicates: `attacks::attacksByColor` for global attack bitboards and `attacks::isSquareAttacked` for targeted check/threat queries.
