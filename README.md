@@ -41,8 +41,27 @@ flowchart LR
 ### Prerequisites
 - **C++ Compiler**: GCC 14+, Clang 16+, or MSVC 2022 (C++20 required)
 - **Build Tools**: CMake 3.23+ and Ninja
-- **Python**: 3.12+ (for backend and research tools)
+- **Python**: 3.12+ (managed via [uv](https://docs.astral.sh/uv/))
 - **Node.js**: 22+ (for frontend)
+
+### Python Setup (uv)
+
+[uv](https://docs.astral.sh/uv/) is the Python package manager for this project. It replaces pip entirely.
+
+```bash
+# Install uv (one-time, any platform)
+pip install uv
+# or: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install all Python dependencies (backend + tools) from the lockfile
+uv sync --frozen
+
+# Run backend in dev mode
+uv run uvicorn app.backend.main:app --reload
+
+# Run backend tests
+uv run python -m unittest discover -s app/backend/tests
+```
 
 ### Building the Native Engine
 
