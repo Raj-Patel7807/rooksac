@@ -5,7 +5,7 @@ import { EvalBar } from '../components/analysis/EvalBar';
 import { MoveList } from '../components/play/MoveList';
 import { PlayerHeader } from '../components/play/PlayerHeader';
 import { GameOverModal } from '../components/play/GameOverModal';
-import { TimeControlPicker, TIME_PRESETS } from '../components/play/TimeControlPicker';
+import { TimeControlPicker } from '../components/play/TimeControlPicker';
 
 describe('UI Components', () => {
   it('renders PromotionDialog and handles selection', () => {
