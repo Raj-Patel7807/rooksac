@@ -1,0 +1,14 @@
+{
+  "stats": {
+    "total_parsed": 20,
+    "valid_games": 19,
+    "duplicates": 1,
+    "rejected_malformed": 0
+  },
+  "splits": {
+    "train_count": 13,
+    "val_count": 2,
+    "test_count": 4
+  },
+  "zero_leakage_verified": true
+}
