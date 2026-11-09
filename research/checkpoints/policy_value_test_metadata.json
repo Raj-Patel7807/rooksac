@@ -1,0 +1,24 @@
+{
+  "architecture": "PolicyValueNet-ResNet",
+  "in_channels": 18,
+  "num_blocks": 2,
+  "channels": 32,
+  "vocab_size": 4096,
+  "input_schema": "(18, 8, 8) [pieces, stm, castling, ep]",
+  "training_config": {
+    "epochs": 3,
+    "batch_size": 8,
+    "lr": 0.001,
+    "seed": 42
+  },
+  "final_metrics": {
+    "epoch": 3,
+    "train_loss": 5.0319,
+    "train_top1": 0.75,
+    "val_loss": 8.6125,
+    "val_top1": 0.0,
+    "val_top3": 0.0,
+    "val_value_loss": 0.3617
+  },
+  "license": "Public Domain / Open Data (CC0 / Lichess Terms)"
+}
