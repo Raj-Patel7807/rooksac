@@ -38,6 +38,12 @@ struct TuningEntry {
 [[nodiscard]] std::string serializeParametersToJson(const eval::EvalParameters& params, std::string_view version = "1.0.0");
 [[nodiscard]] bool deserializeParametersFromJson(std::string_view jsonStr, eval::EvalParameters& outParams);
 
+/// \brief Saves evaluation parameters to a versioned JSON file on disk.
+[[nodiscard]] bool saveParametersToFile(const std::string& path, const eval::EvalParameters& params, std::string_view version = "1.0.0");
+
+/// \brief Loads evaluation parameters from a versioned JSON file on disk, with fallback to defaults.
+[[nodiscard]] bool loadParametersFromFile(const std::string& path, eval::EvalParameters& outParams);
+
 /// \brief Sequential Probability Ratio Test (SPRT) configuration and state.
 struct SprtConfig {
     double elo0 = 0.0;     ///< H0: Null hypothesis Elo advantage

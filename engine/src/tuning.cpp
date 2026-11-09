@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 #include <iomanip>
 #include <sstream>
 
@@ -103,6 +104,24 @@ bool deserializeParametersFromJson(std::string_view jsonStr, eval::EvalParameter
     outParams.rookOnSemiOpenFile.eg = extractScoreField(jsonStr, "\"rookOnSemiOpenFile\"", "\"eg\"", outParams.rookOnSemiOpenFile.eg);
 
     return true;
+}
+
+bool saveParametersToFile(const std::string& path, const eval::EvalParameters& params, std::string_view version) {
+    std::ofstream file(path);
+    if (!file.is_open()) {
+        return false;
+    }
+    file << serializeParametersToJson(params, version);
+    return file.good();
+}
+
+bool loadParametersFromFile(const std::string& path, eval::EvalParameters& outParams) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        return false;
+    }
+    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    return deserializeParametersFromJson(content, outParams);
 }
 
 SprtResult evaluateSprt(std::uint32_t wins, std::uint32_t losses, std::uint32_t draws, const SprtConfig& config) {

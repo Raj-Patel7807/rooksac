@@ -49,6 +49,15 @@ void testParameterJsonSerialization() {
     require(success, "Deserialization succeeds");
     require(deserialized.bishopPair.mg == 35, "Deserialized bishopPair.mg matches");
     require(deserialized.bishopPair.eg == 55, "Deserialized bishopPair.eg matches");
+
+    // Test file persistence round-trip
+    const std::string tempFile = "eval_params_test.json";
+    require(saveParametersToFile(tempFile, params, "1.0.0"), "saveParametersToFile succeeds");
+    eval::EvalParameters fileLoaded;
+    require(loadParametersFromFile(tempFile, fileLoaded), "loadParametersFromFile succeeds");
+    require(fileLoaded.bishopPair.mg == 35, "Loaded bishopPair.mg matches");
+    require(fileLoaded.bishopPair.eg == 55, "Loaded bishopPair.eg matches");
+    std::remove(tempFile.c_str());
 }
 
 void testMseCalculationOnFixture() {
