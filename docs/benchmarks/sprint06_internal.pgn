@@ -1,0 +1,260 @@
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "NegamaxAgent"]
+[Black "GreedyAgent"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"]
+[Termination "Checkmate"]
+
+1. a7a6 a2a3 2. a6a5 b2b3 3. a5a4 b3a4 4. a8a4 c2c4 5. a4a3 b1a3 6. b7b6 d2d3 7. b6b5 c4b5 8. c7c6 b5c6 9. d7c6 f2f3 10. d8d3 f1d3 11. c6c5 g2g3 12. c5c4 a3c4 13. e7e6 h2h3 14. e6e5 c4e5 15. c8h3 g1h3 16. f7f6 e5c4 17. f6f5 e4f5 18. g7g6 f5g6 19. h7g6 d3g6 20. e8e7 d1d6 1-0
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "GreedyAgent"]
+[Black "NegamaxAgent"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1"]
+[Termination "Checkmate"]
+
+1. a7a6 a2a3 2. a6a5 b2b3 3. a5a4 b3a4 4. a8a4 c2c3 5. b7b5 d1a4 6. b5a4 e2e3 7. c7c6 f2f3 8. d7d6 g2g3 9. c6c5 d4c5 10. d6c5 h2h3 11. e7e6 c3c4 12. e6e5 e3e4 13. f7f6 f3f4 14. e5f4 g3f4 15. d8d4 h3h4 16. d4e4 g1e2 17. e4h1 f4f5 18. h1h4 e2g3 19. h4g3 e1d1 20. c8f5 b1d2 21. g7g6 d2b1 22. g3b3 d1e1 23. f5b1 a1b1 24. b3b1 f1e2 25. b1c1 e2d1 26. c1a3 d1a4 27. a3a4 e1f1 28. a4c4 f1e1 29. f6f5 e1d1 30. f5f4 d1e1 31. f4f3 e1d1 32. f3f2 d1d2 33. f8h6 d2d1 34. f2f1q 0-1
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "NegamaxAgent"]
+[Black "GreedyAgent"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2"]
+[Termination "Checkmate"]
+
+1. a2a3 c5c4 2. f1c4 a7a6 3. b2b3 a6a5 4. c2c3 a5a4 5. b3a4 a8a4 6. d1a4 b7b6 7. d2d3 b6b5 8. c4b5 e7e6 9. f2f3 f8a3 10. b1a3 e6e5 11. g2g3 f7f6 12. h2h3 f6f5 13. e4f5 e5e4 14. d3e4 g7g6 15. f5g6 h7g6 16. c3c4 h8h3 17. g1h3 g6g5 18. h3g5 d8g5 19. c1g5 b8a6 20. b5a6 c8a6 21. a4a6 d7d6 22. a6d6 g8f6 23. g5f6 e8f7 24. f3f4 f7g6 25. g3g4 g6f7 26. c4c5 f7g6 27. e4e5 g6f7 28. f4f5 f7e8 29. d6e7 1-0
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "GreedyAgent"]
+[Black "NegamaxAgent"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "rnbqkbnr/pppp1ppp/8/4p3/4PP2/8/PPPP2PP/RNBQKBNR b KQkq f3 0 2"]
+[Termination "Checkmate"]
+
+1. e5f4 a2a3 2. a7a6 f1a6 3. b7a6 b2b3 4. a6a5 c2c3 5. c7c6 d2d3 6. g7g5 c1f4 7. g5f4 g2g3 8. f4g3 h2g3 9. c6c5 h1h7 10. h8h7 a3a4 11. d7d6 b3b4 12. a5b4 c3b4 13. c5b4 d3d4 14. d6d5 e4d5 15. d8d5 g3g4 16. d5e4 g1e2 17. h7h1 e1d2 18. h1d1 d2d1 19. c8g4 a4a5 20. e4d4 b1d2 21. d4a1 d2b1 22. a1b1 d1d2 23. f8h6 e2f4 24. h6f4 0-1
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "NegamaxAgent"]
+[Black "GreedyAgent"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "rnbqkb1r/pppp1ppp/5n2/4p3/2B1P3/8/PPPP1PPP/RNBQK1NR w KQkq - 2 3"]
+[Termination "Checkmate"]
+
+1. d2d3 f6e4 2. d3e4 a7a6 3. a2a3 f8a3 4. b2a3 a6a5 5. c2c3 a5a4 6. f2f3 b7b6 7. g2g3 b6b5 8. c4b5 c7c6 9. b5a4 a8a4 10. d1a4 c6c5 11. h2h3 c5c4 12. a4c4 d7d6 13. a3a4 c8h3 14. g1h3 d6d5 15. e4d5 d8d5 16. c4d5 e5e4 17. f3e4 f7f6 18. c3c4 f6f5 19. e4f5 g7g6 20. d5e5 e8d7 21. e5h8 g6f5 22. h8b8 f5f4 23. h3f4 h7h6 24. h1h6 d7e7 25. g3g4 e7d7 26. a4a5 d7e7 27. c4c5 e7d7 28. g4g5 d7e7 29. h6h7 1-0
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "GreedyAgent"]
+[Black "NegamaxAgent"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "rnbqkb1r/pppp1ppp/5n2/1B2p3/4P3/8/PPPP1PPP/RNBQK1NR b KQkq - 2 3"]
+[Termination "Checkmate"]
+
+1. f6e4 b5d7 2. b8d7 a2a3 3. a7a6 b2b3 4. a6a5 c2c3 5. b7b6 d2d3 6. e4c5 f2f3 7. a5a4 b3a4 8. c5a4 d1a4 9. a8a4 g2g3 10. b6b5 h2h3 11. c7c6 c3c4 12. b5c4 d3c4 13. a4c4 a3a4 14. c4c1 e1d2 15. c1f1 f3f4 16. f8c5 f4e5 17. d7e5 d2c2 18. c5g1 h1g1 19. f1g1 g3g4 20. d8d3 c2b2 21. d3h3 a4a5 22. e5g4 a5a6 23. c6c5 a6a7 24. g1g2 b1d2 25. g2d2 b2b1 26. h3f1 0-1
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "NegamaxAgent"]
+[Black "GreedyAgent"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 2"]
+[Termination "Checkmate"]
+
+1. e4d5 d8d5 2. a2a3 d5d2 3. e1d2 a7a6 4. b2b3 a6a5 5. c2c3 a5a4 6. b3a4 a8a4 7. d1a4 b7b5 8. a4a8 b5b4 9. a3b4 c7c6 10. a8b8 c6c5 11. b8c8 1-0
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "GreedyAgent"]
+[Black "NegamaxAgent"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "rnbqkbnr/ppp1pppp/8/3p4/3P4/8/PPP1PPPP/RNBQKBNR w KQkq d6 0 2"]
+[Termination "Checkmate"]
+
+1. a2a3 a7a6 2. b2b3 a6a5 3. c2c3 b7b6 4. e2e3 c7c6 5. f2f3 b6b5 6. f1b5 c6b5 7. g2g3 a5a4 8. b3a4 b5a4 9. d1a4 a8a4 10. h2h3 e7e6 11. c3c4 d5c4 12. e3e4 d8d4 13. f3f4 d4a1 14. g3g4 a1b1 15. h3h4 b1e4 16. g1e2 e4h1 17. e2g1 h1g1 18. e1d2 g1g4 19. f4f5 e6f5 20. h4h5 f8a3 21. c1a3 a4a3 22. h5h6 g7h6 23. d2c1 c4c3 24. c1b1 g4d1 0-1
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "NegamaxAgent"]
+[Black "GreedyAgent"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "rnbqkb1r/ppp1pppp/5n2/3p4/3P4/5N2/PPP1PPPP/RNBQKB1R w KQkq - 2 3"]
+[Termination "Checkmate"]
+
+1. a2a3 a7a6 2. b2b3 a6a5 3. c2c3 a5a4 4. b3a4 a8a4 5. d1a4 b7b5 6. a4b5 c7c6 7. b5b8 c6c5 8. d4c5 d5d4 9. c3d4 d8d4 10. f3d4 e7e6 11. b8c8 e8e7 12. d4c6 1-0
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "GreedyAgent"]
+[Black "NegamaxAgent"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "rnbqkb1r/ppp2ppp/4pn2/3p4/2PP4/2N5/PP2PPPP/R1BQKBNR w KQkq - 0 4"]
+[Termination "Checkmate"]
+
+1. c4d5 e6d5 2. c3d5 f6d5 3. a2a3 a7a6 4. b2b3 a6a5 5. e2e3 b7b6 6. f2f3 c7c6 7. g2g3 b6b5 8. f1b5 c6b5 9. h2h3 a5a4 10. b3a4 b5a4 11. d1a4 a8a4 12. e3e4 d5c3 13. f3f4 c3e4 14. g3g4 a4d4 15. a3a4 d8a5 16. c1d2 a5d2 17. e1f1 e4g3 0-1
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "NegamaxAgent"]
+[Black "GreedyAgent"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3"]
+[Termination "Checkmate"]
+
+1. a2a3 f8a3 2. b2a3 a7a6 3. c2c3 a6a5 4. d2d3 a5a4 5. g2g3 b7b6 6. h2h3 b6b5 7. c3c4 b5c4 8. d3c4 d7d6 9. g3g4 c8g4 10. h3g4 d6d5 11. c4d5 d8d5 12. e4d5 e5e4 13. d5c6 e4f3 14. d1f3 f7f6 15. f3e4 g8e7 16. h1h7 h8h7 17. e4h7 e7c6 18. h7g8 e8d7 19. g8a8 f6f5 20. g4f5 g7g6 21. f5g6 c6b4 22. a3b4 a4a3 23. g6g7 a3a2 24. a1a2 c7c6 25. g7g8q c6c5 26. b4c5 d7c7 27. a2a7 1-0
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "GreedyAgent"]
+[Black "NegamaxAgent"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "rnbqkb1r/pp2pppp/2p2n2/3p4/3P4/2N5/PPP1PPPP/R1BQKBNR w KQkq - 0 4"]
+[Termination "Checkmate"]
+
+1. c3d5 c6d5 2. a2a3 a7a6 3. b2b3 a6a5 4. c2c3 b7b6 5. e2e3 e7e6 6. f2f3 g7g6 7. g2g3 g6g5 8. h2h3 h7h6 9. a3a4 h6h5 10. b3b4 a5b4 11. c3b4 f8b4 12. c1d2 b4d2 13. d1d2 h5h4 14. g3h4 g5h4 15. e3e4 d5e4 16. f3e4 f6e4 17. a4a5 e4d2 18. e1d2 d8d4 19. f1d3 d4a1 20. a5b6 a1b2 21. d3c2 b2b6 22. g1e2 e6e5 23. e2c1 f7f6 24. c1a2 a8a2 25. h1a1 b6d4 26. d2c1 a2a1 27. c2b1 d4f2 28. c1d1 a1b1 0-1
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "NegamaxAgent"]
+[Black "GreedyAgent"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "rnbqkb1r/ppp1pppp/5n2/3p4/2PP4/8/PP2PPPP/RNBQKBNR w KQkq - 1 3"]
+[Termination "Checkmate"]
+
+1. c4d5 f6d5 2. a2a3 a7a6 3. b2b3 a6a5 4. e2e3 d5e3 5. f2e3 d8d4 6. e3d4 a5a4 7. b3a4 a8a4 8. d1a4 b7b5 9. a4a8 b5b4 10. a8b8 b4a3 11. b8c8 1-0
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "GreedyAgent"]
+[Black "NegamaxAgent"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "rnbqkb1r/pppp1ppp/4pn2/8/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 3"]
+[Termination "Checkmate"]
+
+1. a2a3 f6e4 2. b2b3 a7a6 3. f1a6 b7a6 4. c2c3 a6a5 5. f2f3 e4g5 6. c1g5 d8g5 7. g2g3 e6e5 8. d4e5 g5e5 9. g1e2 c7c6 10. d1d7 e8d7 11. h2h3 a5a4 12. b3a4 a8a4 13. c3c4 e5a1 14. f3f4 a1b1 15. e2c1 b1c1 16. e1e2 c1h1 17. g3g4 f8a3 18. h3h4 a4c4 19. f4f5 c4g4 20. h4h5 h1h5 21. f5f6 g7f6 22. e2d1 c6c5 23. d1e1 c5c4 24. e1d1 c4c3 25. d1e1 c3c2 26. e1f1 h5h2 27. f1e1 c2c1q 0-1
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "NegamaxAgent"]
+[Black "GreedyAgent"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "rnbqkb1r/ppp1pppp/3p1n2/8/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 3"]
+[Termination "Checkmate"]
+
+1. f2f3 f6e4 2. f3e4 d6d5 3. e4d5 d8d5 4. a2a3 d5g2 5. f1g2 a7a6 6. b2b3 a6a5 7. c2c3 a5a4 8. b3a4 a8a4 9. d1a4 b7b5 10. a4a8 b5b4 11. a8b8 b4a3 12. b8c8 1-0
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "GreedyAgent"]
+[Black "NegamaxAgent"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3"]
+[Termination "Checkmate"]
+
+1. a7a6 f3e5 2. c6e5 c4a6 3. b7a6 a2a3 4. a6a5 b2b3 5. a5a4 b3a4 6. a8a4 c2c3 7. a4e4 d1e2 8. e5d3 e1d1 9. e4e2 d1e2 10. d3c1 h1c1 11. c7c6 d2d3 12. c6c5 f2f3 13. d7d6 g2g3 14. d6d5 h2h3 15. c8h3 a3a4 16. c5c4 d3c4 17. d5c4 f3f4 18. f7f6 g3g4 19. h3g4 e2e1 20. f8d6 a4a5 21. d6f4 a5a6 22. f4c1 a6a7 23. g4f3 a7a8q 24. f3a8 a1a8 25. d8a8 b1d2 26. c1b2 d2c4 27. a8e4 c4e3 28. e4e3 e1d1 29. b2c3 d1c2 30. f6f5 c2b1 31. f5f4 b1a2 32. f4f3 a2b1 33. f3f2 b1a2 34. f2f1q a2a3 35. g7g6 a3a2 36. g6g5 a2a3 37. g5g4 a3a2 38. g4g3 a2a3 39. g3g2 a3a2 40. g2g1q a2a3 41. h7h6 a3a2 42. h6h5 a2a3 43. h5h4 a3a2 44. h4h3 a2a3 45. h3h2 a3a2 46. h2h1q a2a3 47. g8f6 a3a2 48. f6e4 a2a3 49. e4d2 a3a2 50. f1a1 0-1
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "NegamaxAgent"]
+[Black "GreedyAgent"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4"]
+[Termination "Checkmate"]
+
+1. d2d3 f6e4 2. d3e4 a7a6 3. a2a3 f8a3 4. b2a3 a6a5 5. c2c3 a5a4 6. c4b5 b7b6 7. b5a4 a8a4 8. d1a4 b6b5 9. a4b5 d7d6 10. b5c6 c8d7 11. c6c4 d6d5 12. e4d5 e5e4 13. c4e4 d7e6 14. d5e6 f7e6 15. e4e6 d8e7 16. e6e7 e8e7 17. g2g3 c7c6 18. h2h3 c6c5 19. a3a4 c5c4 20. g3g4 g7g6 21. h3h4 g6g5 22. h4g5 h7h6 23. g5h6 h8h6 24. c1h6 e7d6 25. a4a5 d6c5 26. g4g5 c5b5 27. a5a6 b5c5 28. a6a7 c5b5 29. a7a8q b5c5 30. b1a3 c5b6 31. a3c4 b6b5 32. a8d5 1-0
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "GreedyAgent"]
+[Black "NegamaxAgent"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "rnbqkb1r/ppp2ppp/3p1n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4"]
+[Termination "Checkmate"]
+
+1. f3e5 d6e5 2. c4f7 e8f7 3. a2a3 f6e4 4. b2b3 a7a6 5. c2c3 a6a5 6. d2d3 e4c5 7. f2f3 c5d3 8. d1d3 d8d3 9. g2g3 d3f3 10. h2h3 f3h1 11. e1d2 h1h3 12. a3a4 h3g3 13. b3b4 a5b4 14. c3b4 f8b4 15. b1c3 b4c3 16. d2d1 c3a1 17. a4a5 a8a5 18. c1b2 a1b2 19. d1c2 b2a1 20. c2b1 e5e4 21. b1c1 e4e3 22. c1b1 e3e2 23. b1c1 g3c3 24. c1b1 e2e1q 0-1
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "NegamaxAgent"]
+[Black "GreedyAgent"]
+[Result "1-0"]
+[SetUp "1"]
+[FEN "rnbqk2r/pppp1ppp/4pn2/8/1bPP4/2N5/PP2PPPP/R1BQKBNR w KQkq - 2 4"]
+[Termination "Checkmate"]
+
+1. a2a3 b4c3 2. b2c3 e6e5 3. d4e5 a7a6 4. e5f6 g7f6 5. e2e3 a6a5 6. f2f3 a5a4 7. g2g3 f6f5 8. h2h3 f5f4 9. e3f4 b7b6 10. g3g4 b6b5 11. c4b5 c7c6 12. b5c6 d7c6 13. d1d8 e8d8 14. c3c4 c8g4 15. f3g4 c6c5 16. h3h4 f7f6 17. f4f5 h7h6 18. h4h5 b8a6 19. g1e2 a6b4 20. a3b4 c5b4 21. c4c5 a4a3 22. c5c6 a3a2 23. e2g1 b4b3 24. g1e2 b3b2 25. c1b2 a8a3 26. b2a3 h8h7 27. a1a2 h7a7 28. e2c1 a7a3 29. a2a3 d8c7 30. f1g2 c7b6 31. c1a2 b6b5 32. c6c7 b5c4 33. c7c8q c4d4 34. c8c3 1-0
+
+[Event "RookSac Benchmark Match"]
+[Site "Local"]
+[Date "????.??.??"]
+[Round "-"]
+[White "GreedyAgent"]
+[Black "NegamaxAgent"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "rnbqk2r/ppp1ppbp/3p1np1/8/2PPP3/2N5/PP3PPP/R1BQKBNR w KQkq - 0 5"]
+[Termination "Checkmate"]
+
+1. a2a3 a7a6 2. b2b3 a6a5 3. f2f3 b7b6 4. g2g3 c7c6 5. h2h3 c6c5 6. d4c5 f6e4 7. f3e4 g7c3 8. c1d2 c3a1 9. d1a1 e7e5 10. c5b6 d8b6 11. d2a5 b6a5 12. b3b4 a5a3 13. a1a3 a8a3 14. g3g4 a3e3 15. g1e2 e3e4 16. h3h4 e4c4 17. b4b5 c8g4 18. h4h5 g6h5 19. h1h5 g4h5 20. b5b6 e5e4 21. b6b7 e4e3 22. e2c1 c4c1 0-1
+
