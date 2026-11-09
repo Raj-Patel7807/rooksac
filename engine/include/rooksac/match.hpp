@@ -17,6 +17,14 @@ struct MatchResult {
     std::string terminationReason;
     std::string finalFen;
     std::vector<Move> moveHistory;
+
+    /// \brief Formats the match into standard PGN string format.
+    [[nodiscard]] std::string toPgn(
+        std::string_view whiteName,
+        std::string_view blackName,
+        std::string_view eventName = "RookSac Match",
+        std::string_view site = "Local",
+        std::string_view initialFen = "") const;
 };
 
 /// \brief Plays a match between two agents starting from the given position until termination or maxPlies.
@@ -28,4 +36,3 @@ struct MatchResult {
     std::uint32_t maxPlies = 200);
 
 }  // namespace rooksac
-
