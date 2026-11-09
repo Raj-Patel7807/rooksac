@@ -173,6 +173,12 @@ rooksac_configure_warnings(rooksac_nnue_test)
 rooksac_configure_sanitizers(rooksac_nnue_test)
 rooksac_configure_clang_tidy(rooksac_nnue_test)
 
+add_executable(rooksac_benchmark_test engine/tests/benchmark-test.cpp)
+target_link_libraries(rooksac_benchmark_test PRIVATE rooksac_core)
+rooksac_configure_warnings(rooksac_benchmark_test)
+rooksac_configure_sanitizers(rooksac_benchmark_test)
+rooksac_configure_clang_tidy(rooksac_benchmark_test)
+
 if(BUILD_TESTING)
     add_test(NAME rooksac.build-smoke COMMAND rooksac_build_smoke_test)
     add_test(NAME rooksac.core-types COMMAND rooksac_core_types_test)
@@ -187,6 +193,7 @@ if(BUILD_TESTING)
     add_test(NAME rooksac.tuning COMMAND rooksac_tuning_test)
     add_test(NAME rooksac.neural_eval COMMAND rooksac_neural_eval_test)
     add_test(NAME rooksac.nnue COMMAND rooksac_nnue_test)
+    add_test(NAME rooksac.benchmark COMMAND rooksac_benchmark_test)
 endif()
 
 add_custom_target(

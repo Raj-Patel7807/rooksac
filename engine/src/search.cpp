@@ -275,6 +275,7 @@ std::int32_t alphaBetaInternal(
     // 2. Transposition table probe
     std::optional<Move> ttMove = std::nullopt;
     if (context && context->ttable) {
+        ++stats.ttProbes;
         const auto ttProbe = context->ttable->probe(hash, ply);
         if (ttProbe.hit) {
             ++stats.ttHits;
@@ -356,6 +357,7 @@ std::int32_t alphaBetaInternal(
 
             if (nullScore >= beta) {
                 ++stats.cutoffs;
+                ++stats.nmpCutoffs;
                 // Avoid returning mate scores that are unreliable from null-move search
                 return (nullScore >= kMateScore - kMaxMatePly) ? beta : nullScore;
             }
@@ -404,6 +406,7 @@ std::int32_t alphaBetaInternal(
             std::uint32_t reduction   = 0U;
             if (doLmr) {
                 reduction = context->options.lmrBaseReduction + (depth / 5U);
+                ++stats.lmrReductions;
             }
             std::uint32_t searchDepth = (depth > 0) ? (depth - 1) : 0;
             // Clamp reduction so we never search at negative depth
@@ -417,6 +420,9 @@ std::int32_t alphaBetaInternal(
 
             // Re-search conditions: either fail-high beyond alpha, or LMR was active
             if (score > alpha && (score < beta || reduction > 0)) {
+                if (reduction > 0) {
+                    ++stats.lmrResearches;
+                }
                 // Full-depth, full-window re-search
                 score = -alphaBetaInternal(
                     position, -beta, -alpha, depth - 1, ply + 1, stats, evaluator, context);

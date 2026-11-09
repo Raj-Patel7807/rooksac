@@ -61,8 +61,12 @@ struct SearchStats {
     std::uint64_t nodes = 0;
     std::uint64_t qnodes = 0;
     std::uint64_t cutoffs = 0;
+    std::uint64_t ttProbes = 0;
     std::uint64_t ttHits = 0;
     std::uint64_t ttCutoffs = 0;
+    std::uint64_t nmpCutoffs = 0;
+    std::uint64_t lmrReductions = 0;
+    std::uint64_t lmrResearches = 0;
     std::uint32_t maxDepth = 0;
 };
 
