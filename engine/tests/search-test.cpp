@@ -9,6 +9,7 @@
 #include "rooksac/negamax_agent.hpp"
 #include "rooksac/position.hpp"
 #include "rooksac/search.hpp"
+#include "rooksac/see.hpp"
 
 namespace {
 
@@ -1053,6 +1054,46 @@ void testAspirationFailLowFailHighRecovery() {
     require(legals.contains(*res.bestMove), "Recovered move is strictly legal");
 }
 
+void testSeeCalculationAndPruning() {
+    // 1. Hanging piece capture: White Queen takes undefended Black Rook
+    // FEN: 4k3/8/8/3r4/8/8/8/3Q4 w - - 0 1
+    auto hangingOpt = Position::fromFen("4k3/8/8/3r4/8/8/8/3Q4 w - - 0 1");
+    require(hangingOpt.hasValue(), "Hanging Rook FEN parses");
+    auto qTakesR = Move::create(Square::D1, Square::D5);
+    require(qTakesR.has_value(), "Qxd5 move creates");
+    require(search::see(*hangingOpt, *qTakesR) == 500, "Qxd5 gains 500 centipawns (Rook value)");
+    require(search::seeGe(*hangingOpt, *qTakesR, 0), "Qxd5 is winning/equal capture");
+
+    // 2. Bad capture: White Queen takes defended Black Pawn (defended by Black Rook on d8)
+    // FEN: 3rk3/8/8/3p4/8/8/8/3Q4 w - - 0 1
+    auto badCapOpt = Position::fromFen("3rk3/8/8/3p4/8/8/8/3Q4 w - - 0 1");
+    require(badCapOpt.hasValue(), "Defended Pawn FEN parses");
+    auto qTakesP = Move::create(Square::D1, Square::D5);
+    require(qTakesP.has_value(), "Qxd5 move creates");
+    require(search::see(*badCapOpt, *qTakesP) == 100 - 900, "Qxd5 loses 800 centipawns (Q - P)");
+    require(!search::seeGe(*badCapOpt, *qTakesP, 0), "Qxd5 is detected as bad capture by SEE");
+
+    // 3. Complex exchange: White Bishop takes Black Knight on d5, defended by Black Pawn on c6 and Queen on d8,
+    // attacked by White Knight on c3.
+    // FEN: 3qkb1r/8/2p5/3n4/8/2N5/8/2B1K3 w - - 0 1
+    auto complexOpt = Position::fromFen("3qkb1r/8/2p5/3n4/8/2N5/8/2B1K3 w - - 0 1");
+    require(complexOpt.hasValue(), "Complex exchange FEN parses");
+    auto bTakesN = Move::create(Square::C1, Square::D5);
+    require(bTakesN.has_value(), "Bxd5 move creates");
+    // White: B(330), N(320). Black: N(320), P(100), Q(900).
+    // B takes N (+320), cxd5 (-330), Nxd5 (+100), Qxd5 (-320) -> White stops or trades equal
+    // Net is >= 0 for Bxd5 because White wins N(320) and loses B(330) at worst or trades knight
+    require(search::see(*complexOpt, *bTakesN) >= -10, "Bxd5 evaluated properly in complex battery");
+
+    // 4. En passant SEE test
+    // FEN: 4k3/8/8/3Pp3/8/8/8/4K3 w - e6 0 1
+    auto epOpt = Position::fromFen("4k3/8/8/3Pp3/8/8/8/4K3 w - e6 0 1");
+    require(epOpt.hasValue(), "EP FEN parses");
+    auto epMove = Move::create(Square::D5, Square::E6);
+    require(epMove.has_value(), "EP move creates");
+    require(search::see(*epOpt, *epMove) == 100, "En passant capture gains pawn value (+100 cp)");
+}
+
 void testAbortPropagationGuaranteedLegalFallback() {
     auto pos = Position::startPosition();
     MoveList legalMoves;
@@ -1108,6 +1149,7 @@ int main() {
     testNmpZugzwangSafeguard();
     testAspirationFailLowFailHighRecovery();
     testAbortPropagationGuaranteedLegalFallback();
+    testSeeCalculationAndPruning();
 
     std::cout << "All Iterative Deepening, Quiescence, Time Control, and Search tests passed successfully.\n";
     return EXIT_SUCCESS;

@@ -72,6 +72,7 @@ add_library(rooksac_core
     engine/src/perft.cpp
     engine/src/position.cpp
     engine/src/search.cpp
+    engine/src/see.cpp
     engine/src/time_management.cpp
     engine/src/transposition_table.cpp
     engine/src/tuning.cpp

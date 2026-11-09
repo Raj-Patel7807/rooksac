@@ -1,0 +1,9 @@
+id,name,depth,nodes,qnodes,time_ms,time_dispersion_ms,nps,best_move,pv,score,cutoffs,tt_probes,tt_hits,tt_cutoffs,nmp_cutoffs,lmr_reductions,lmr_researches
+pos01_startpos,Startpos,5,6254,2433,4,0.58,1563500,g1f3,g1f3,22,658,3820,819,627,0,419,0
+pos02_kiwipete,Kiwipete,5,60384,32059,77,1.00,784207,e2a6,e2a6,-33,5626,28324,3554,2717,0,2207,3
+pos03_tactical_midgame,Tactical-Midgame,5,16378,8462,16,0.00,1023625,c1d2,c1d2,-42,1658,7915,1055,799,0,676,0
+pos04_rook_endgame,Rook-Endgame,5,6739,3275,5,0.58,1347800,a5a4,a5a4,111,1143,3463,530,355,0,235,2
+pos05_queen_endgame,Queen-Endgame,5,9451,3897,4,0.58,2362750,b2e5,b2e5,1038,1384,5553,1776,1495,0,456,0
+pos06_knight_pawn,Knight-Pawn,5,1,0,1,0.00,1000,e7e6,e7e6,0,0,0,0,0,0,0,0
+pos07_passed_pawns,Passed-Pawns,5,996,407,1,0.00,996000,e3d2,e3d2,-546,161,588,119,47,0,31,0
+pos08_kingside_attack,Kingside-Attack,5,23128,10883,23,0.58,1005565,c3d5,c3d5,267,2222,12244,1738,1332,0,1138,1

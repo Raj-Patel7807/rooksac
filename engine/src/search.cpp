@@ -6,6 +6,7 @@
 
 #include "rooksac/legal_movegen.hpp"
 #include "rooksac/move_order.hpp"
+#include "rooksac/see.hpp"
 
 namespace rooksac {
 namespace search {
@@ -220,6 +221,21 @@ std::int32_t quiescenceInternal(
     std::int32_t bestScore = standPat;
     for (std::size_t i = 0; i < captures.size(); ++i) {
         const Move m = captures[i];
+
+        // Delta pruning: if standPat + captured_piece_value + safety_margin < alpha,
+        // and it is not a promotion, this capture cannot possibly raise alpha.
+        const Piece targetPiece = position.pieceAt(m.to());
+        const std::int32_t victimVal = (targetPiece != Piece::None) ? eval::pieceTypeValue(typeOf(targetPiece)) : 100;
+        constexpr std::int32_t kDeltaMargin = 200; // 2 pawns margin for positional swings
+        if (m.promotion() == PieceType::None && (standPat + victimVal + kDeltaMargin < alpha)) {
+            continue;
+        }
+
+        // SEE pruning in quiescence: skip captures with negative SEE (hanging attacks)
+        if (!seeGe(position, m, 0)) {
+            continue;
+        }
+
         UndoState undo;
         (void)position.makeMove(m, undo);
         const std::int32_t score = -quiescenceInternal(
@@ -396,10 +412,21 @@ std::int32_t alphaBetaInternal(
                 position, -beta, -alpha, depth - 1, ply + 1, stats, evaluator, context);
         } else {
             // LMR: late quiet moves at sufficient depth get a depth-scaled reduction first.
-            // Reduction formula: base + depth/5, so reductions grow with search depth.
+            // Safety constraints:
+            // - Do not reduce captures or promotions
+            // - Do not reduce when in check
+            // - Do not reduce moves that give check
+            // - Do not reduce killer moves
+            const bool givesCheck = movegen::isInCheck(position);
+            const bool isKiller = (killers != nullptr && ply < SearchOptions::kMaxKillerPly) &&
+                                  ((*killers)[ply][0].encoded() == m.encoded() ||
+                                   (*killers)[ply][1].encoded() == m.encoded());
+
             bool doLmr = useLmr &&
                          !isCapture &&
                          !inCheck &&
+                         !givesCheck &&
+                         !isKiller &&
                          depth >= context->options.lmrMinDepth &&
                          i    >= context->options.lmrMoveThreshold;
 

@@ -13,14 +13,14 @@ namespace rooksac {
 namespace search {
 
 /// \brief Base priorities for move ordering stages.
-inline constexpr std::int32_t kPvMoveBaseScore = 40'000;
-inline constexpr std::int32_t kCapturePromoBaseScore = 30'000;
-inline constexpr std::int32_t kPromoBaseScore = 20'000;
-inline constexpr std::int32_t kCaptureBaseScore = 10'000;
-/// \brief Killer moves are ordered just below captures and promotions.
-inline constexpr std::int32_t kKillerBaseScore = 5'000;
-/// \brief Quiet moves receive kQuietBaseScore plus the history heuristic bonus.
+inline constexpr std::int32_t kPvMoveBaseScore = 50'000;
+inline constexpr std::int32_t kCapturePromoBaseScore = 40'000;
+inline constexpr std::int32_t kPromoBaseScore = 30'000;
+inline constexpr std::int32_t kGoodCaptureBaseScore = 20'000;
+inline constexpr std::int32_t kCaptureBaseScore = kGoodCaptureBaseScore;
+inline constexpr std::int32_t kKillerBaseScore = 10'000;
 inline constexpr std::int32_t kQuietBaseScore = 0;
+inline constexpr std::int32_t kBadCaptureBaseScore = -10'000;
 
 /// \brief Per-ply killer move storage. Two quiet moves that caused a beta cutoff
 /// are kept per ply so they can be tried early in sibling nodes.

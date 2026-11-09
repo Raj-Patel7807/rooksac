@@ -6,6 +6,7 @@
 #include <cstdint>
 
 #include "rooksac/material.hpp"
+#include "rooksac/see.hpp"
 
 namespace rooksac {
 namespace search {
@@ -64,7 +65,14 @@ std::int32_t scoreMove(
     if (isCapture) {
         const std::int32_t victimVal   = eval::pieceTypeValue(victimType);
         const std::int32_t attackerVal = eval::pieceTypeValue(typeOf(movedPiece));
-        return kCaptureBaseScore + (victimVal * 10 - attackerVal);
+        const std::int32_t mvvLva = victimVal * 10 - attackerVal;
+
+        // If attacker is less valuable than or equal to victim, capture is winning/equal
+        if (attackerVal <= victimVal || seeGe(position, move, 0)) {
+            return kGoodCaptureBaseScore + mvvLva;
+        } else {
+            return kBadCaptureBaseScore + mvvLva;
+        }
     }
 
     // 5. Killer move heuristic: quiet moves that previously caused a beta cutoff at this ply
