@@ -184,6 +184,26 @@ void testInsufficientMaterialDetection() {
     require(knnvk.hasValue() && !eval::hasInsufficientMaterial(*knnvk), "K+N+N vs K is sufficient material");
 }
 
+void testEvaluationBreakdown() {
+    auto pos = Position::startPosition();
+    const auto b = eval::evaluateBreakdown(pos);
+    require(b.blendedTotal == 0, "Startpos breakdown total is 0");
+    require(b.sideToMoveScore == 0, "Startpos breakdown side-to-move is 0");
+    require(b.phase == 24, "Startpos phase is 24 (opening)");
+    require(b.materialAndPst.mg == 0 && b.materialAndPst.eg == 0, "Startpos material+PST is balanced");
+    require(b.pawns.mg == 0 && b.pawns.eg == 0, "Startpos pawns are balanced");
+    require(b.kingSafety.mg == 0 && b.kingSafety.eg == 0, "Startpos king safety is balanced");
+    require(b.piecesAndMobility.mg == 0 && b.piecesAndMobility.eg == 0, "Startpos mobility is balanced");
+
+    // Asymmetric breakdown test: White has an extra Rook
+    auto posExtraRook = Position::fromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBN1 w Qkq - 0 1");
+    // Black has 2 rooks, White has 1 rook -> Black is up a rook
+    require(posExtraRook.hasValue(), "Extra Rook FEN parsed");
+    const auto bExtra = eval::evaluateBreakdown(*posExtraRook);
+    require(bExtra.materialAndPst.mg < -400, "Material+PST reflects missing rook");
+    require(bExtra.blendedTotal < -400, "Blended total reflects deficit");
+}
+
 void testEvaluationBenchmarkAndThroughput() {
     auto pos = Position::startPosition();
 
@@ -215,6 +235,7 @@ int main() {
     testGamePhaseAndTaperedBlending();
     testMaterialBaselineRemainsAvailable();
     testInsufficientMaterialDetection();
+    testEvaluationBreakdown();
     testEvaluationBenchmarkAndThroughput();
 
     std::cout << "All classical tapered evaluation tests passed successfully.\n";

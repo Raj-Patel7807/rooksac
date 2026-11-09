@@ -523,6 +523,20 @@ Score evaluatePiecesAndMobility(const Position& position, const EvalParameters& 
     return score;
 }
 
+EvalBreakdown evaluateBreakdown(const Position& position, const EvalParameters& params) noexcept {
+    EvalBreakdown b;
+    b.materialAndPst = evaluateMaterialAndPST(position, params);
+    b.pawns = evaluatePawns(position, params);
+    b.kingSafety = evaluateKingSafety(position, params);
+    b.piecesAndMobility = evaluatePiecesAndMobility(position, params);
+    b.phase = calculateGamePhase(position);
+
+    const Score totalScore = b.materialAndPst + b.pawns + b.kingSafety + b.piecesAndMobility;
+    b.blendedTotal = blendScore(totalScore, b.phase);
+    b.sideToMoveScore = (position.sideToMove() == Color::White) ? b.blendedTotal : -b.blendedTotal;
+    return b;
+}
+
 std::int32_t evaluate(const Position& position, const EvalParameters& params) noexcept {
     Score totalScore{};
 

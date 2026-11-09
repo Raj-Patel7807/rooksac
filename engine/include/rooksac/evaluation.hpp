@@ -20,6 +20,22 @@ inline constexpr std::int32_t kTotalPhase = 24;
     return ((score.mg * phase) + (score.eg * (kTotalPhase - phase))) / kTotalPhase;
 }
 
+/// \brief Detailed term-by-term evaluation breakdown for analysis, tuning, and debugging.
+struct EvalBreakdown {
+    Score materialAndPst{};
+    Score pawns{};
+    Score kingSafety{};
+    Score piecesAndMobility{};
+    std::int32_t phase = 0;
+    std::int32_t blendedTotal = 0;
+    std::int32_t sideToMoveScore = 0;
+};
+
+/// \brief Computes a full term-by-term evaluation breakdown without printing or polluting stdout.
+[[nodiscard]] EvalBreakdown evaluateBreakdown(
+    const Position& position,
+    const EvalParameters& params = defaultParameters()) noexcept;
+
 /// \brief Evaluates material and piece-square table scores for both sides.
 [[nodiscard]] Score evaluateMaterialAndPST(const Position& position, const EvalParameters& params) noexcept;
 
