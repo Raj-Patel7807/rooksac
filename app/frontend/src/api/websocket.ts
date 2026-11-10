@@ -1,3 +1,5 @@
+import { getWsBaseUrl } from "../config/env";
+
 export interface WsMessage {
     type: string;
     seq?: number;
@@ -16,8 +18,8 @@ export class RobustWebSocket {
     private handlers: Set<WsHandler> = new Set();
     private isDisposed = false;
 
-    constructor(url: string) {
-        this.url = url;
+    constructor(url?: string) {
+        this.url = url || getWsBaseUrl();
     }
 
     public connect(): void {

@@ -5,6 +5,7 @@ import type {
     PgnImportRequest,
     PgnImportResponse,
 } from "./types";
+import { getApiBaseUrl } from "../config/env";
 
 export class ApiError extends Error {
     status: number;
@@ -14,8 +15,6 @@ export class ApiError extends Error {
         this.status = status;
     }
 }
-
-const API_BASE = "/api/v1";
 
 async function handleResponse<T>(res: Response): Promise<T> {
     if (!res.ok) {
@@ -41,7 +40,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 export const apiClient = {
     async getHealth(signal?: AbortSignal): Promise<HealthResponse> {
-        const res = await fetch(`${API_BASE}/health`, { signal });
+        const res = await fetch(`${getApiBaseUrl()}/health`, { signal });
         return handleResponse<HealthResponse>(res);
     },
 
@@ -49,7 +48,7 @@ export const apiClient = {
         req: AnalysisRequest,
         signal?: AbortSignal,
     ): Promise<AnalysisResponse> {
-        const res = await fetch(`${API_BASE}/analysis`, {
+        const res = await fetch(`${getApiBaseUrl()}/analysis`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -64,7 +63,7 @@ export const apiClient = {
         req: PgnImportRequest,
         signal?: AbortSignal,
     ): Promise<PgnImportResponse> {
-        const res = await fetch(`${API_BASE}/pgn/import`, {
+        const res = await fetch(`${getApiBaseUrl()}/pgn/import`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
