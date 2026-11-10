@@ -3,20 +3,24 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <vector>
 
 #include "rooksac/evaluation.hpp"
+#include "rooksac/sha256.hpp"
 
 namespace rooksac {
 namespace neural {
 
 namespace {
 
-// Magic header bytes for RookSac native model format
-constexpr char kMagicHeader[8] = {'R', 'O', 'O', 'K', 'S', 'A', 'C', '1'};
-constexpr std::uint32_t kSupportedFormatVersion = 1;
+// Magic header bytes for RookSac native model format v2
+constexpr char kMagicHeader[8] = {'R', 'O', 'O', 'K', 'S', 'A', 'C', '2'};
+constexpr std::uint32_t kSupportedFormatVersion = 2;
+constexpr std::size_t kHeaderSize = 64;
+constexpr std::size_t kSha256DigestSize = 32;
 
 void conv2d(
     const float* in,
@@ -160,6 +164,28 @@ bool NeuralEvaluator::loadModel(std::string_view modelPath, bool allowFallback) 
         return false;
     }
 
+    std::error_code ec;
+    const auto fileSize = std::filesystem::file_size(modelPath, ec);
+    if (ec) {
+        std::cerr << "NeuralEvaluator error: Cannot access model file: " << modelPath << '\n';
+        if (allowFallback) {
+            metadata_.isLoaded = false;
+            fallbackMode_ = true;
+            return true;
+        }
+        return false;
+    }
+
+    if (fileSize < kHeaderSize + kSha256DigestSize) {
+        std::cerr << "NeuralEvaluator error: File too small for header and checksum: " << modelPath << '\n';
+        if (allowFallback) {
+            metadata_.isLoaded = false;
+            fallbackMode_ = true;
+            return true;
+        }
+        return false;
+    }
+
     std::ifstream file(std::string(modelPath), std::ios::binary);
     if (!file.is_open()) {
         std::cerr << "NeuralEvaluator error: Cannot open model file: " << modelPath << '\n';
@@ -171,9 +197,24 @@ bool NeuralEvaluator::loadModel(std::string_view modelPath, bool allowFallback) 
         return false;
     }
 
-    char magic[8];
-    if (!file.read(magic, 8) || std::memcmp(magic, kMagicHeader, 8) != 0) {
-        std::cerr << "NeuralEvaluator error: Invalid model file header in: " << modelPath << '\n';
+    // Initialize SHA-256 hasher to stream and verify integrity
+    crypto::Sha256 hasher;
+
+    // 1. Read 64-byte Header
+    std::array<std::uint8_t, kHeaderSize> headerBytes{};
+    if (!file.read(reinterpret_cast<char*>(headerBytes.data()), static_cast<std::streamsize>(headerBytes.size()))) {
+        std::cerr << "NeuralEvaluator error: Cannot read header: " << modelPath << '\n';
+        if (allowFallback) {
+            metadata_.isLoaded = false;
+            fallbackMode_ = true;
+            return true;
+        }
+        return false;
+    }
+    hasher.update(headerBytes.data(), headerBytes.size());
+
+    if (std::memcmp(headerBytes.data(), kMagicHeader, 8) != 0) {
+        std::cerr << "NeuralEvaluator error: Invalid model file magic in: " << modelPath << '\n';
         if (allowFallback) {
             metadata_.isLoaded = false;
             fallbackMode_ = true;
@@ -183,17 +224,176 @@ bool NeuralEvaluator::loadModel(std::string_view modelPath, bool allowFallback) 
     }
 
     std::uint32_t version = 0;
+    std::uint32_t inputChannels = 0;
     std::uint32_t numBlocks = 0;
     std::uint32_t channels = 0;
     std::uint32_t numActions = 0;
+    std::uint32_t metaBytes = 0;
+    std::uint64_t payloadBytes = 0;
 
-    file.read(reinterpret_cast<char*>(&version), sizeof(version));
-    file.read(reinterpret_cast<char*>(&numBlocks), sizeof(numBlocks));
-    file.read(reinterpret_cast<char*>(&channels), sizeof(channels));
-    file.read(reinterpret_cast<char*>(&numActions), sizeof(numActions));
+    std::memcpy(&version, headerBytes.data() + 8, sizeof(version));
+    std::memcpy(&inputChannels, headerBytes.data() + 12, sizeof(inputChannels));
+    std::memcpy(&numBlocks, headerBytes.data() + 16, sizeof(numBlocks));
+    std::memcpy(&channels, headerBytes.data() + 20, sizeof(channels));
+    std::memcpy(&numActions, headerBytes.data() + 24, sizeof(numActions));
+    std::memcpy(&metaBytes, headerBytes.data() + 28, sizeof(metaBytes));
+    std::memcpy(&payloadBytes, headerBytes.data() + 32, sizeof(payloadBytes));
 
-    if (!file.good() || version != kSupportedFormatVersion || numActions != kActionVocabSize) {
-        std::cerr << "NeuralEvaluator error: Incompatible model format or action count\n";
+    // Bounds and safety verification
+    if (version != kSupportedFormatVersion ||
+        inputChannels != kInputChannels ||
+        numBlocks < 1 || numBlocks > 32 ||
+        channels < 8 || channels > 512 ||
+        numActions != kActionVocabSize) {
+        std::cerr << "NeuralEvaluator error: Incompatible model format or bounds exceeded (version="
+                  << version << ", blocks=" << numBlocks << ", channels=" << channels
+                  << ", actions=" << numActions << ")\n";
+        if (allowFallback) {
+            metadata_.isLoaded = false;
+            fallbackMode_ = true;
+            return true;
+        }
+        return false;
+    }
+
+    // Calculate expected payload size
+    const std::size_t convInFloats = channels * kInputChannels * 3 * 3 + channels;
+    const std::size_t resBlockFloats = numBlocks * (2 * (channels * channels * 3 * 3) + 2 * channels);
+    const std::size_t policyFloats = (16 * channels * 1 * 1 + 16) + (numActions * 16 * 64 + numActions);
+    const std::size_t valueFloats = (4 * channels * 1 * 1 + 4) + (64 * 4 * 64 + 64) + (1 * 64 + 1);
+    const std::uint64_t expectedPayloadBytes = static_cast<std::uint64_t>(
+        (convInFloats + resBlockFloats + policyFloats + valueFloats) * sizeof(float));
+
+    if (payloadBytes != expectedPayloadBytes) {
+        std::cerr << "NeuralEvaluator error: Payload byte count mismatch in header (got "
+                  << payloadBytes << ", expected " << expectedPayloadBytes << ")\n";
+        if (allowFallback) {
+            metadata_.isLoaded = false;
+            fallbackMode_ = true;
+            return true;
+        }
+        return false;
+    }
+
+    const std::uint64_t expectedTotalSize = kHeaderSize + metaBytes + payloadBytes + kSha256DigestSize;
+    if (fileSize != expectedTotalSize) {
+        std::cerr << "NeuralEvaluator error: File size mismatch (actual=" << fileSize
+                  << ", expected=" << expectedTotalSize << ")\n";
+        if (allowFallback) {
+            metadata_.isLoaded = false;
+            fallbackMode_ = true;
+            return true;
+        }
+        return false;
+    }
+
+    // 2. Read JSON Metadata
+    std::string jsonMeta(metaBytes, '\0');
+    if (metaBytes > 0) {
+        if (!file.read(jsonMeta.data(), static_cast<std::streamsize>(metaBytes))) {
+            std::cerr << "NeuralEvaluator error: Incomplete metadata payload\n";
+            if (allowFallback) {
+                metadata_.isLoaded = false;
+                fallbackMode_ = true;
+                return true;
+            }
+            return false;
+        }
+        hasher.update(jsonMeta.data(), jsonMeta.size());
+    }
+
+    // Helper lambda to read a float buffer, update hasher, and check for NaN/Inf
+    auto readWeights = [&](std::vector<float>& buf, std::size_t count) -> bool {
+        buf.resize(count);
+        const std::streamsize bytesToRead = static_cast<std::streamsize>(count * sizeof(float));
+        if (!file.read(reinterpret_cast<char*>(buf.data()), bytesToRead)) {
+            return false;
+        }
+        hasher.update(buf.data(), static_cast<std::size_t>(bytesToRead));
+        for (std::size_t i = 0; i < count; ++i) {
+            if (std::isnan(buf[i]) || std::isinf(buf[i])) {
+                std::cerr << "NeuralEvaluator error: NaN or Inf weight detected\n";
+                return false;
+            }
+        }
+        return true;
+    };
+
+    // 3. Read Weights Payload
+    // 3.1 Conv In
+    if (!readWeights(convInW_, channels * kInputChannels * 3 * 3) ||
+        !readWeights(convInB_, channels)) {
+        std::cerr << "NeuralEvaluator error: Failed reading Conv In weights\n";
+        if (allowFallback) {
+            metadata_.isLoaded = false;
+            fallbackMode_ = true;
+            return true;
+        }
+        return false;
+    }
+
+    // 3.2 ResBlocks
+    blocks_.resize(numBlocks);
+    for (std::size_t b = 0; b < numBlocks; ++b) {
+        if (!readWeights(blocks_[b].w1, channels * channels * 3 * 3) ||
+            !readWeights(blocks_[b].b1, channels) ||
+            !readWeights(blocks_[b].w2, channels * channels * 3 * 3) ||
+            !readWeights(blocks_[b].b2, channels)) {
+            std::cerr << "NeuralEvaluator error: Failed reading ResBlock " << b << " weights\n";
+            if (allowFallback) {
+                metadata_.isLoaded = false;
+                fallbackMode_ = true;
+                return true;
+            }
+            return false;
+        }
+    }
+
+    // 3.3 Policy Head
+    if (!readWeights(policyConvW_, 16 * channels * 1 * 1) ||
+        !readWeights(policyConvB_, 16) ||
+        !readWeights(policyFcW_, numActions * 16 * 64) ||
+        !readWeights(policyFcB_, numActions)) {
+        std::cerr << "NeuralEvaluator error: Failed reading Policy Head weights\n";
+        if (allowFallback) {
+            metadata_.isLoaded = false;
+            fallbackMode_ = true;
+            return true;
+        }
+        return false;
+    }
+
+    // 3.4 Value Head
+    if (!readWeights(valueConvW_, 4 * channels * 1 * 1) ||
+        !readWeights(valueConvB_, 4) ||
+        !readWeights(valueFc1W_, 64 * 4 * 64) ||
+        !readWeights(valueFc1B_, 64) ||
+        !readWeights(valueFc2W_, 1 * 64) ||
+        !readWeights(valueFc2B_, 1)) {
+        std::cerr << "NeuralEvaluator error: Failed reading Value Head weights\n";
+        if (allowFallback) {
+            metadata_.isLoaded = false;
+            fallbackMode_ = true;
+            return true;
+        }
+        return false;
+    }
+
+    // 4. Read & Verify SHA-256 Checksum
+    std::array<std::uint8_t, kSha256DigestSize> fileDigest{};
+    if (!file.read(reinterpret_cast<char*>(fileDigest.data()), kSha256DigestSize)) {
+        std::cerr << "NeuralEvaluator error: Cannot read checksum trailer\n";
+        if (allowFallback) {
+            metadata_.isLoaded = false;
+            fallbackMode_ = true;
+            return true;
+        }
+        return false;
+    }
+
+    const auto computedDigest = hasher.finalize();
+    if (std::memcmp(fileDigest.data(), computedDigest.data(), kSha256DigestSize) != 0) {
+        std::cerr << "NeuralEvaluator error: SHA-256 checksum mismatch (corrupted model file)\n";
         if (allowFallback) {
             metadata_.isLoaded = false;
             fallbackMode_ = true;
@@ -203,70 +403,16 @@ bool NeuralEvaluator::loadModel(std::string_view modelPath, bool allowFallback) 
     }
 
     metadata_.name = "RookSac-NativeCNN";
-    metadata_.version = "1.0.0";
+    metadata_.version = "2.0.0";
     metadata_.schemaVersion = "18x8x8-v1";
     metadata_.numBlocks = numBlocks;
     metadata_.channels = channels;
+    metadata_.numActions = numActions;
     metadata_.sourcePath = std::string(modelPath);
-
-    // 1. Read Conv In
-    convInW_.resize(channels * kInputChannels * 3 * 3);
-    convInB_.resize(channels);
-    file.read(reinterpret_cast<char*>(convInW_.data()), static_cast<std::streamsize>(convInW_.size() * sizeof(float)));
-    file.read(reinterpret_cast<char*>(convInB_.data()), static_cast<std::streamsize>(convInB_.size() * sizeof(float)));
-
-    // 2. Read ResBlocks
-    blocks_.resize(numBlocks);
-    for (std::size_t b = 0; b < numBlocks; ++b) {
-        blocks_[b].w1.resize(channels * channels * 3 * 3);
-        blocks_[b].b1.resize(channels);
-        blocks_[b].w2.resize(channels * channels * 3 * 3);
-        blocks_[b].b2.resize(channels);
-
-        file.read(reinterpret_cast<char*>(blocks_[b].w1.data()), static_cast<std::streamsize>(blocks_[b].w1.size() * sizeof(float)));
-        file.read(reinterpret_cast<char*>(blocks_[b].b1.data()), static_cast<std::streamsize>(blocks_[b].b1.size() * sizeof(float)));
-        file.read(reinterpret_cast<char*>(blocks_[b].w2.data()), static_cast<std::streamsize>(blocks_[b].w2.size() * sizeof(float)));
-        file.read(reinterpret_cast<char*>(blocks_[b].b2.data()), static_cast<std::streamsize>(blocks_[b].b2.size() * sizeof(float)));
-    }
-
-    // 3. Read Policy Head
-    policyConvW_.resize(16 * channels * 1 * 1);
-    policyConvB_.resize(16);
-    policyFcW_.resize(numActions * 16 * 64);
-    policyFcB_.resize(numActions);
-
-    file.read(reinterpret_cast<char*>(policyConvW_.data()), static_cast<std::streamsize>(policyConvW_.size() * sizeof(float)));
-    file.read(reinterpret_cast<char*>(policyConvB_.data()), static_cast<std::streamsize>(policyConvB_.size() * sizeof(float)));
-    file.read(reinterpret_cast<char*>(policyFcW_.data()), static_cast<std::streamsize>(policyFcW_.size() * sizeof(float)));
-    file.read(reinterpret_cast<char*>(policyFcB_.data()), static_cast<std::streamsize>(policyFcB_.size() * sizeof(float)));
-
-    // 4. Read Value Head
-    valueConvW_.resize(4 * channels * 1 * 1);
-    valueConvB_.resize(4);
-    valueFc1W_.resize(64 * 4 * 64);
-    valueFc1B_.resize(64);
-    valueFc2W_.resize(1 * 64);
-    valueFc2B_.resize(1);
-
-    file.read(reinterpret_cast<char*>(valueConvW_.data()), static_cast<std::streamsize>(valueConvW_.size() * sizeof(float)));
-    file.read(reinterpret_cast<char*>(valueConvB_.data()), static_cast<std::streamsize>(valueConvB_.size() * sizeof(float)));
-    file.read(reinterpret_cast<char*>(valueFc1W_.data()), static_cast<std::streamsize>(valueFc1W_.size() * sizeof(float)));
-    file.read(reinterpret_cast<char*>(valueFc1B_.data()), static_cast<std::streamsize>(valueFc1B_.size() * sizeof(float)));
-    file.read(reinterpret_cast<char*>(valueFc2W_.data()), static_cast<std::streamsize>(valueFc2W_.size() * sizeof(float)));
-    file.read(reinterpret_cast<char*>(valueFc2B_.data()), static_cast<std::streamsize>(valueFc2B_.size() * sizeof(float)));
-
-    if (!file.good()) {
-        std::cerr << "NeuralEvaluator error: Incomplete weights payload in: " << modelPath << '\n';
-        if (allowFallback) {
-            metadata_.isLoaded = false;
-            fallbackMode_ = true;
-            return true;
-        }
-        return false;
-    }
-
+    metadata_.jsonMetadata = std::move(jsonMeta);
     metadata_.isLoaded = true;
     fallbackMode_ = false;
+
     return true;
 }
 

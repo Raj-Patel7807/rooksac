@@ -203,6 +203,68 @@ void testModelLoadingAndFallback() {
     require(logits.size() == kActionVocabSize, "Logits vector allocated to vocabulary size");
 }
 
+void testModelFormatRejectionAndIntegrityChecks() {
+    NeuralEvaluator evaluator;
+
+    // 1. Test truncated file rejection
+    {
+        std::ofstream out("build/test_truncated.rks", std::ios::binary);
+        out.write("ROOKSAC2", 8);
+        out.close();
+        require(!evaluator.loadModel("build/test_truncated.rks", false), "Truncated header rejected");
+    }
+
+    // 2. Test corrupted magic bytes rejection
+    {
+        std::ifstream src("research/checkpoints/model_test.rks", std::ios::binary);
+        if (src.is_open()) {
+            std::vector<char> buffer((std::istreambuf_iterator<char>(src)), std::istreambuf_iterator<char>());
+            src.close();
+            buffer[0] = 'B';
+            buffer[1] = 'A';
+            buffer[2] = 'D';
+            buffer[3] = '!';
+            std::ofstream out("build/test_bad_magic.rks", std::ios::binary);
+            out.write(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+            out.close();
+            require(!evaluator.loadModel("build/test_bad_magic.rks", false), "Bad magic rejected");
+        }
+    }
+
+    // 3. Test corrupted SHA-256 checksum rejection
+    {
+        std::ifstream src("research/checkpoints/model_test.rks", std::ios::binary);
+        if (src.is_open()) {
+            std::vector<char> buffer((std::istreambuf_iterator<char>(src)), std::istreambuf_iterator<char>());
+            src.close();
+            // Corrupt a weight byte
+            if (buffer.size() > 100) {
+                buffer[80] ^= 0x55;
+            }
+            std::ofstream out("build/test_corrupt_weight.rks", std::ios::binary);
+            out.write(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+            out.close();
+            require(!evaluator.loadModel("build/test_corrupt_weight.rks", false), "Corrupted weight checksum mismatch rejected");
+        }
+    }
+
+    // 4. Test trailing unexpected payload rejection
+    {
+        std::ifstream src("research/checkpoints/model_test.rks", std::ios::binary);
+        if (src.is_open()) {
+            std::vector<char> buffer((std::istreambuf_iterator<char>(src)), std::istreambuf_iterator<char>());
+            src.close();
+            buffer.push_back('X');
+            buffer.push_back('Y');
+            buffer.push_back('Z');
+            std::ofstream out("build/test_trailing_bytes.rks", std::ios::binary);
+            out.write(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+            out.close();
+            require(!evaluator.loadModel("build/test_trailing_bytes.rks", false), "Trailing payload rejected");
+        }
+    }
+}
+
 void testRealModelInference() {
     const std::string modelPath = "research/checkpoints/model_test.rks";
     std::ifstream f(modelPath, std::ios::binary);
@@ -272,6 +334,7 @@ int main() {
     testActionEncodingBijectiveAndDistinctPromotions();
     testValueCalibrationRoundtrip();
     testModelLoadingAndFallback();
+    testModelFormatRejectionAndIntegrityChecks();
     testRealModelInference();
     testSearchRunsWithNeuralEvaluator();
     testPolicyOrderingOnlyRanksLegalMoves();

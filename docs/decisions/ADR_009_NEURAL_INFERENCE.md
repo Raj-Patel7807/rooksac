@@ -38,21 +38,24 @@ RookSac trains dual-headed convolutional residual neural networks (`PolicyValueN
 
 We choose **Option B: A genuine, native C++ forward-pass inference engine with portable binary export (`.rks`)**.
 
-### Model File Format Specification (`.rks` - RookSac Model File):
+### Model File Format Specification (`.rks` - RookSac Model File v2):
 
-1. **Magic Header** (8 bytes): `ROOKSAC1`
-2. **Version** (uint32_t): `1`
+1. **Magic Header** (8 bytes): `ROOKSAC2`
+2. **Version** (uint32_t): `2`
 3. **Architecture Info**:
-    - `in_channels` (uint32_t): 18
-    - `num_blocks` (uint32_t): residual blocks count
-    - `channels` (uint32_t): feature channels
-    - `num_actions` (uint32_t): 4096
-4. **Weights Payload** (IEEE 754 float32 little-endian):
-    - `conv_in` (weights: `[channels, in_channels, 3, 3]`, biases: `[channels]`)
+    - `input_channels` (uint32_t): 18
+    - `num_blocks` (uint32_t): residual blocks count (1..32)
+    - `channels` (uint32_t): feature channels (8..512)
+    - `num_actions` (uint32_t): 4240 (Vocabulary Version 2.0.0)
+    - `meta_bytes` (uint32_t): UTF-8 JSON metadata length
+    - `payload_bytes` (uint64_t): byte length of weights payload
+4. **Metadata Payload**: UTF-8 JSON containing provenance, git revision, and training metrics.
+5. **Weights Payload** (IEEE 754 float32 little-endian):
+    - `conv_in` (weights: `[channels, 18, 3, 3]`, biases: `[channels]`)
     - Residual blocks (weights + biases for conv1, conv2)
-    - `policy_head` (conv 1x1 + dense 4096)
+    - `policy_head` (conv 1x1 + dense 4240)
     - `value_head` (conv 1x1 + dense 64 + dense 1)
-5. **CRC32 / Checksum** for structural validation.
+6. **Integrity Verification**: 32-byte SHA-256 binary checksum over Header + Metadata + Weights payload. See `docs/ml/RKS_FORMAT.md` for exact specification.
 
 ---
 

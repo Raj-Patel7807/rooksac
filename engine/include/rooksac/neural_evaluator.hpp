@@ -149,11 +149,13 @@ enum class EvalMode {
 /// \brief Neural evaluator model metadata.
 struct ModelMetadata {
     std::string name = "RookSac-PolicyValueNet";
-    std::string version = "1.0.0";
+    std::string version = "2.0.0";
     std::string schemaVersion = "18x8x8-v1";
     std::uint32_t numBlocks = 0;
     std::uint32_t channels = 0;
+    std::uint32_t numActions = 0;
     std::string sourcePath;
+    std::string jsonMetadata;
     bool isLoaded = false;
 };
 
