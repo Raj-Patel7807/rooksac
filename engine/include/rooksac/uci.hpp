@@ -9,6 +9,7 @@
 #include <thread>
 
 #include "rooksac/move.hpp"
+#include "rooksac/neural_evaluator.hpp"
 #include "rooksac/position.hpp"
 #include "rooksac/search.hpp"
 #include "rooksac/transposition_table.hpp"
@@ -75,6 +76,13 @@ private:
     search::SearchStopToken stopToken_{};
     std::unique_ptr<std::thread> searchThread_{nullptr};
     std::atomic<bool> isSearching_{false};
+
+    // Configuration options
+    neural::EvalMode evalMode_ = neural::EvalMode::Classical;
+    std::string modelPath_{};
+    bool usePolicy_ = false;
+    float neuralWeight_ = 0.5f;
+    bool fallbackActive_ = false;
 };
 
 }  // namespace uci

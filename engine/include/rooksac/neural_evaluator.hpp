@@ -37,8 +37,10 @@ using FeatureTensor = std::array<float, kInputTensorSize>;
 /// \brief Evaluation mode selection.
 enum class EvalMode {
     Classical,      ///< Classical tapered evaluation (PSTs, pawns, mobility, king safety)
-    NeuralValue,    ///< Neural network value output calibrated to centipawns
-    Blended         ///< Calibrated blend of classical and neural evaluations
+    Neural,         ///< Neural network value output calibrated to centipawns
+    Hybrid,         ///< Calibrated blend of classical and neural evaluations
+    NeuralValue = Neural,
+    Blended = Hybrid
 };
 
 /// \brief Encodes a Position into an 18x8x8 planar float tensor (C-major order: channel, rank, file).

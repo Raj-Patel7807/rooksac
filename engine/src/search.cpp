@@ -3,9 +3,11 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <vector>
 
 #include "rooksac/legal_movegen.hpp"
 #include "rooksac/move_order.hpp"
+#include "rooksac/neural_evaluator.hpp"
 #include "rooksac/see.hpp"
 
 namespace rooksac {
@@ -383,7 +385,19 @@ std::int32_t alphaBetaInternal(
     // 5. Staged move ordering (with TT best move, killers, and history prioritised)
     KillerTable*  killers = (context && context->options.killerMoves)  ? context->killers  : nullptr;
     HistoryTable* history = (context && context->options.historyHeuristic) ? context->history : nullptr;
-    orderMoves(position, legalMoves, ttMove, killers, ply, history);
+
+    const std::vector<float>* nodePolicyLogits = nullptr;
+    std::vector<float> nodeLogitsBuf;
+    if (context && context->options.usePolicy && depth >= 3) {
+        auto& neur = neural::getGlobalNeuralEvaluator();
+        if (neur.isLoaded()) {
+            const auto [v, p] = neur.evaluate(position);
+            (void)v;
+            nodeLogitsBuf = p;
+            nodePolicyLogits = &nodeLogitsBuf;
+        }
+    }
+    orderMoves(position, legalMoves, ttMove, killers, ply, history, nodePolicyLogits);
 
     // 6. Fail-soft Alpha-Beta with PVS and LMR
     const std::int32_t originalAlpha = alpha;
@@ -731,7 +745,18 @@ SearchResult search(
         }
 
         // Root move ordering: PV move from previous iteration is ordered first
-        orderMoves(position, legalMoves, pvMove, context.killers, 0, context.history);
+        const std::vector<float>* rootPolicyLogits = nullptr;
+        std::vector<float> rootLogitsBuf;
+        if (options.usePolicy) {
+            auto& neur = neural::getGlobalNeuralEvaluator();
+            if (neur.isLoaded()) {
+                const auto [v, p] = neur.evaluate(position);
+                (void)v;
+                rootLogitsBuf = p;
+                rootPolicyLogits = &rootLogitsBuf;
+            }
+        }
+        orderMoves(position, legalMoves, pvMove, context.killers, 0, context.history, rootPolicyLogits);
 
         // ── Aspiration windows ───────────────────────────────────────────────
         // Use full window for depth 1 (no prior score to center on).

@@ -1114,6 +1114,29 @@ void testAbortPropagationGuaranteedLegalFallback() {
     require(legalMoves.contains(*res.bestMove), "Guaranteed fallback move is strictly legal");
 }
 
+void testEvaluatorSelectionParity() {
+    auto pos = Position::startPosition();
+    search::SearchLimits limits(2);
+
+    int classicalCalls = 0;
+    auto classicalRes = search::search(pos, limits, [&](const Position& p) {
+        ++classicalCalls;
+        return eval::evaluateSideToMove(p);
+    });
+    (void)classicalRes;
+
+    int customCalls = 0;
+    auto customRes = search::search(pos, limits, [&](const Position&) {
+        ++customCalls;
+        return 42; // arbitrary unique value
+    });
+
+    require(classicalCalls > 0, "Classical evaluator was actively called");
+    require(customCalls > 0, "Custom evaluator was actively called");
+    require(customRes.score == 42, "Search score directly reflects the active custom evaluator");
+    require(customRes.bestMove.has_value(), "Custom search returned legal move");
+}
+
 }  // namespace
 
 int main() {
@@ -1150,6 +1173,7 @@ int main() {
     testAspirationFailLowFailHighRecovery();
     testAbortPropagationGuaranteedLegalFallback();
     testSeeCalculationAndPruning();
+    testEvaluatorSelectionParity();
 
     std::cout << "All Iterative Deepening, Quiescence, Time Control, and Search tests passed successfully.\n";
     return EXIT_SUCCESS;

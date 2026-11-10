@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 #include "rooksac/move.hpp"
 #include "rooksac/move_list.hpp"
@@ -66,13 +67,15 @@ inline constexpr std::int32_t kHistoryMax = 8'000;
 /// \brief Sorts legal moves in-place according to staged priority scores.
 /// Preserves the relative order of equally scored moves (stable sorting)
 /// to maintain strict determinism across test runs.
+/// If policyLogits is non-null, quiet moves incorporate normalized policy logits into their ranking.
 void orderMoves(
     const Position& position,
     MoveList& moves,
     std::optional<Move> pvMove = std::nullopt,
     const KillerTable* killers = nullptr,
     std::uint32_t ply = 0,
-    const HistoryTable* history = nullptr) noexcept;
+    const HistoryTable* history = nullptr,
+    const std::vector<float>* policyLogits = nullptr) noexcept;
 
 /// \brief Records a quiet move that caused a beta cutoff in the killer table.
 /// Shifts existing killers down, inserting the new move in slot 0.

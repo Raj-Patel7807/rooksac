@@ -1,4 +1,5 @@
 #include <cassert>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -268,6 +269,95 @@ void testStopCommandInterruptsSearch() {
     require(output.find("bestmove ") != std::string::npos, "Emits bestmove when stopped");
 }
 
+void testUciNeuralConfigurationAndOptions() {
+    // 1. Check options advertised in UCI handshake
+    {
+        std::istringstream in("uci\nquit\n");
+        std::ostringstream out;
+        std::ostringstream err;
+        uci::EngineSession session(in, out, err);
+        session.run();
+
+        const std::string s = out.str();
+        require(s.find("option name EvalMode type combo") != std::string::npos, "Advertises EvalMode");
+        require(s.find("option name ModelPath type string") != std::string::npos, "Advertises ModelPath");
+        require(s.find("option name UsePolicy type check") != std::string::npos, "Advertises UsePolicy");
+        require(s.find("option name NeuralWeight type spin") != std::string::npos, "Advertises NeuralWeight");
+    }
+
+    // 2. Strict Neural Mode without valid model path reports error
+    {
+        std::istringstream in("setoption name EvalMode value Neural\n"
+                              "setoption name ModelPath value non_existent_model.rks\n"
+                              "isready\nquit\n");
+        std::ostringstream out;
+        std::ostringstream err;
+        uci::EngineSession session(in, out, err);
+        session.run();
+
+        const std::string errStr = err.str();
+        const std::string outStr = out.str();
+        require(errStr.find("failed to load model strictly") != std::string::npos ||
+                outStr.find("error:") != std::string::npos,
+                "Strict neural mode reports error on invalid model");
+    }
+
+    // 3. Fallback mode: Hybrid/Blended with missing model falls back cleanly to Classical
+    {
+        std::istringstream in("setoption name EvalMode value Hybrid\n"
+                              "setoption name ModelPath value non_existent_model.rks\n"
+                              "isready\n"
+                              "go depth 1\nquit\n");
+        std::ostringstream out;
+        std::ostringstream err;
+        uci::EngineSession session(in, out, err);
+        session.run();
+
+        const std::string s = out.str();
+        require(s.find("fallback active") != std::string::npos, "Emits fallback active message");
+        require(s.find("bestmove ") != std::string::npos, "Search completes and emits bestmove under fallback");
+    }
+
+    // 4. Valid Model Loading and Search in Neural & Hybrid modes
+    const std::string validModel = "research/checkpoints/model_test.rks";
+    if (std::ifstream(validModel).good()) {
+        std::istringstream in("setoption name ModelPath value " + validModel + "\n"
+                              "setoption name EvalMode value Neural\n"
+                              "setoption name UsePolicy value true\n"
+                              "isready\n"
+                              "position startpos\n"
+                              "go depth 2\n"
+                              "ucinewgame\n"
+                              "position fen 7k/5ppp/8/8/8/8/8/3QK3 w - - 0 1\n"
+                              "go depth 2\n"
+                              "quit\n");
+        std::ostringstream out;
+        std::ostringstream err;
+        uci::EngineSession session(in, out, err);
+        session.run();
+
+        const std::string s = out.str();
+        require(s.find("loaded model") != std::string::npos || s.find("model loaded") != std::string::npos,
+                "Valid model successfully loaded in UCI");
+        require(s.find("bestmove ") != std::string::npos, "Neural search emits bestmove");
+    }
+
+    // 5. Multiple engine instances and repeated positions
+    {
+        std::istringstream in1("position startpos moves e2e4 e7e5\ngo depth 1\nquit\n");
+        std::ostringstream out1, err1;
+        uci::EngineSession session1(in1, out1, err1);
+        session1.run();
+        require(out1.str().find("bestmove ") != std::string::npos, "Session 1 succeeds");
+
+        std::istringstream in2("position startpos moves d2d4 d7d5\ngo depth 1\nquit\n");
+        std::ostringstream out2, err2;
+        uci::EngineSession session2(in2, out2, err2);
+        session2.run();
+        require(out2.str().find("bestmove ") != std::string::npos, "Session 2 succeeds independently");
+    }
+}
+
 }  // namespace
 
 int main() {
@@ -281,6 +371,7 @@ int main() {
     testNumericParsingRobustness();
     testRequiredTimeControls();
     testStopCommandInterruptsSearch();
+    testUciNeuralConfigurationAndOptions();
 
     std::cout << "All UCI protocol and engine session tests passed successfully.\n";
     return 0;

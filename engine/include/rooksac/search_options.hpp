@@ -76,6 +76,10 @@ struct SearchOptions {
     /// by this score, producing better cutoffs in subsequent iterations.
     bool historyHeuristic = true;
 
+    /// \brief Enable policy network guidance in move ordering.
+    /// When true and policy logits are available, they refine ranking within tactical tiers.
+    bool usePolicy = false;
+
     /// \brief Maximum ply depth for which killer moves are tracked.
     static constexpr std::uint32_t kMaxKillerPly = 64;
 
@@ -92,6 +96,7 @@ struct SearchOptions {
         opts.lmr                = false;
         opts.killerMoves        = false;
         opts.historyHeuristic   = false;
+        opts.usePolicy          = false;
         return opts;
     }
 };

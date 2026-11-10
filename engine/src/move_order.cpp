@@ -4,8 +4,10 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 #include "rooksac/material.hpp"
+#include "rooksac/neural_evaluator.hpp"
 #include "rooksac/see.hpp"
 
 namespace rooksac {
@@ -104,7 +106,8 @@ void orderMoves(
     std::optional<Move> pvMove,
     const KillerTable* killers,
     std::uint32_t ply,
-    const HistoryTable* history) noexcept {
+    const HistoryTable* history,
+    const std::vector<float>* policyLogits) noexcept {
     const std::size_t count = moves.size();
     if (count <= 1) {
         return;
@@ -113,7 +116,22 @@ void orderMoves(
     std::array<ScoredMove, MoveList::kMaxCapacity> scoredMoves{};
     for (std::size_t i = 0; i < count; ++i) {
         scoredMoves[i].move  = moves[i];
-        scoredMoves[i].score = scoreMove(position, moves[i], pvMove, killers, ply, history);
+        std::int32_t baseScore = scoreMove(position, moves[i], pvMove, killers, ply, history);
+
+        // If policyLogits are available and this move is not the PV move (which remains top priority),
+        // add a policy bonus for fine-grained ranking among tactical categories.
+        // Captures/promotions (>= 20000) stay above quiet moves, but policy guides ordering within each tier.
+        if (policyLogits != nullptr && (!pvMove.has_value() || moves[i].encoded() != pvMove->encoded())) {
+            const auto actionIdx = neural::encodeMove(moves[i]);
+            if (actionIdx < policyLogits->size()) {
+                const float logit = (*policyLogits)[actionIdx];
+                // Scale logit (e.g. range [-10.0, 10.0]) into +/- 500 bonus
+                const auto scaledBonus = static_cast<std::int32_t>(std::clamp(logit * 50.0f, -500.0f, 500.0f));
+                baseScore += scaledBonus;
+            }
+        }
+
+        scoredMoves[i].score = baseScore;
     }
 
     // Stable sort ensures moves with the same score maintain their deterministic generation order.

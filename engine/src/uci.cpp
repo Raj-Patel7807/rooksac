@@ -3,6 +3,7 @@
 #include <cctype>
 #include <charconv>
 #include <chrono>
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -209,11 +210,30 @@ void EngineSession::handleUci() {
     out_ << "id name RookSac 0.1.0\n";
     out_ << "id author RookSac Authors\n";
     out_ << "option name Hash type spin default 64 min 1 max 1024\n";
+    out_ << "option name EvalMode type combo default Classical var Classical var Neural var Hybrid\n";
+    out_ << "option name ModelPath type string default <empty>\n";
+    out_ << "option name UsePolicy type check default false\n";
+    out_ << "option name NeuralWeight type spin default 50 min 0 max 100\n";
     out_ << "uciok\n";
     out_.flush();
 }
 
 void EngineSession::handleIsReady() {
+    if (evalMode_ == neural::EvalMode::Neural || evalMode_ == neural::EvalMode::Hybrid) {
+        auto& evaluator = neural::getGlobalNeuralEvaluator();
+        if (evaluator.isLoaded()) {
+            const auto& meta = evaluator.metadata();
+            out_ << "info string model loaded: " << meta.name << " " << meta.version
+                 << " (" << meta.numBlocks << " blocks, " << meta.channels << " channels, "
+                 << meta.numActions << " actions)\n";
+        } else if (fallbackActive_) {
+            out_ << "info string model fallback active: Classical evaluation will be used\n";
+        } else {
+            out_ << "info string warning: EvalMode is "
+                 << (evalMode_ == neural::EvalMode::Neural ? "Neural" : "Hybrid")
+                 << " but no valid model is loaded\n";
+        }
+    }
     out_ << "readyok\n";
     out_.flush();
 }
@@ -379,15 +399,39 @@ void EngineSession::searchWorker(search::SearchLimits limits) {
         out_.flush();
     };
 
+    search::SearchOptions searchOpts{};
+    searchOpts.usePolicy = usePolicy_;
+
+    const auto leafEvaluator = [this](const Position& pos) -> std::int32_t {
+        if (evalMode_ == neural::EvalMode::Classical) {
+            return eval::evaluateSideToMove(pos);
+        }
+
+        auto& evaluator = neural::getGlobalNeuralEvaluator();
+        if (!evaluator.isLoaded()) {
+            return eval::evaluateSideToMove(pos);
+        }
+
+        if (evalMode_ == neural::EvalMode::Neural) {
+            return evaluator.evaluateSideToMove(pos);
+        }
+
+        // Blended / Hybrid
+        const std::int32_t classical = eval::evaluateSideToMove(pos);
+        const std::int32_t neural = evaluator.evaluateSideToMove(pos);
+        const float w = std::clamp(neuralWeight_, 0.0f, 1.0f);
+        const auto blended = static_cast<std::int32_t>(
+            std::round((1.0f - w) * static_cast<float>(classical) + w * static_cast<float>(neural)));
+        return blended;
+    };
+
     const auto result = search::search(
         position_,
         limits,
-        [](const Position& pos) {
-            return eval::evaluateSideToMove(pos);
-        },
+        leafEvaluator,
         &stopToken_,
         &ttable_,
-        search::SearchOptions{},
+        searchOpts,
         &infoCallback);
 
     // Emit bestmove strictly to stdout
@@ -409,16 +453,106 @@ void EngineSession::handleStop() {
 void EngineSession::handleSetOption(std::string_view args) {
     const auto tokens = splitTokens(args);
     // Standard format: setoption name <name> [value <val>]
-    if (tokens.size() >= 4 && tokens[0] == "name" && tokens[2] == "value") {
+    if (tokens.size() >= 2 && tokens[0] == "name") {
         std::string optName = tokens[1];
         std::transform(optName.begin(), optName.end(), optName.begin(), [](unsigned char c) {
             return static_cast<char>(std::tolower(c));
         });
+
+        std::string optValue;
+        if (tokens.size() >= 4 && tokens[2] == "value") {
+            // Value can be multiple tokens (especially file paths with spaces)
+            std::size_t valPos = args.find("value");
+            if (valPos != std::string_view::npos) {
+                valPos += 5;
+                while (valPos < args.size() && std::isspace(static_cast<unsigned char>(args[valPos]))) {
+                    ++valPos;
+                }
+                optValue = std::string(args.substr(valPos));
+            }
+        }
+
         if (optName == "hash") {
-            if (auto mb = parseUint(tokens[3]); mb.has_value()) {
+            if (auto mb = parseUint(optValue); mb.has_value()) {
                 stopSearch();
                 joinSearch();
                 ttable_.resize(static_cast<std::size_t>(*mb) * 1024ULL * 1024ULL);
+                return;
+            }
+        } else if (optName == "modelpath") {
+            stopSearch();
+            joinSearch();
+            modelPath_ = optValue;
+            auto& evaluator = neural::getGlobalNeuralEvaluator();
+            const bool allowFallback = (evalMode_ != neural::EvalMode::Neural);
+            const bool ok = evaluator.loadModel(modelPath_, allowFallback);
+            if (!ok && !allowFallback) {
+                fallbackActive_ = false;
+                err_ << "info string error: failed to load model strictly from " << modelPath_ << '\n';
+                out_ << "info string error: model load failed for " << modelPath_ << '\n';
+                out_.flush();
+            } else if (!evaluator.isLoaded() && allowFallback) {
+                fallbackActive_ = true;
+                out_ << "info string model load failed, classical fallback active\n";
+                out_.flush();
+            } else if (evaluator.isLoaded()) {
+                fallbackActive_ = false;
+                const auto& meta = evaluator.metadata();
+                out_ << "info string loaded model " << meta.sourcePath << " ("
+                     << meta.numBlocks << "b " << meta.channels << "c " << meta.numActions << "a)\n";
+                out_.flush();
+            }
+            return;
+        } else if (optName == "evalmode") {
+            stopSearch();
+            joinSearch();
+            std::string modeLower = optValue;
+            std::transform(modeLower.begin(), modeLower.end(), modeLower.begin(), [](unsigned char c) {
+                return static_cast<char>(std::tolower(c));
+            });
+
+            if (modeLower == "classical") {
+                evalMode_ = neural::EvalMode::Classical;
+                fallbackActive_ = false;
+                return;
+            } else if (modeLower == "neural") {
+                evalMode_ = neural::EvalMode::Neural;
+                auto& evaluator = neural::getGlobalNeuralEvaluator();
+                if (!evaluator.isLoaded()) {
+                    if (!modelPath_.empty()) {
+                        const bool ok = evaluator.loadModel(modelPath_, /*allowFallback=*/false);
+                        if (!ok) {
+                            err_ << "info string error: EvalMode=Neural requires a valid model file\n";
+                            out_ << "info string error: EvalMode=Neural requires a valid model file\n";
+                            out_.flush();
+                        }
+                    } else {
+                        err_ << "info string error: EvalMode=Neural requires ModelPath to be configured first\n";
+                        out_ << "info string error: ModelPath not configured for neural evaluation\n";
+                        out_.flush();
+                    }
+                }
+                return;
+            } else if (modeLower == "hybrid" || modeLower == "blended") {
+                evalMode_ = neural::EvalMode::Blended;
+                auto& evaluator = neural::getGlobalNeuralEvaluator();
+                if (!evaluator.isLoaded() && !modelPath_.empty()) {
+                    evaluator.loadModel(modelPath_, /*allowFallback=*/true);
+                }
+                fallbackActive_ = !evaluator.isLoaded();
+                return;
+            }
+        } else if (optName == "usepolicy") {
+            std::string valLower = optValue;
+            std::transform(valLower.begin(), valLower.end(), valLower.begin(), [](unsigned char c) {
+                return static_cast<char>(std::tolower(c));
+            });
+            usePolicy_ = (valLower == "true" || valLower == "1");
+            return;
+        } else if (optName == "neuralweight") {
+            if (auto weight = parseUint(optValue); weight.has_value()) {
+                const auto clamped = std::clamp(*weight, 0U, 100U);
+                neuralWeight_ = static_cast<float>(clamped) / 100.0f;
                 return;
             }
         }

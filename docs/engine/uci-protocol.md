@@ -16,15 +16,26 @@ In RookSac, UCI protocol handling is cleanly decoupled from internal board repre
 
 | Command             | Syntax / Example                                                                                    | Behavior                                                                                                                      |
 | ------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `uci`               | `uci`                                                                                               | Identifies the engine (`id name RookSac 0.1.0`, `id author RookSac Authors`) and emits `uciok`.                               |
-| `isready`           | `isready`                                                                                           | Synchronizes GUI and engine; responds immediately with `readyok`.                                                             |
+| `uci`               | `uci`                                                                                               | Identifies the engine (`id name RookSac 0.1.0`, `id author RookSac Authors`), advertises options, and emits `uciok`.          |
+| `isready`           | `isready`                                                                                           | Synchronizes GUI and engine; emits diagnostic info strings on loaded model/fallback status, and responds with `readyok`.       |
 | `ucinewgame`        | `ucinewgame`                                                                                        | Resets the active board state to the starting position and halts active searches.                                             |
 | `position startpos` | `position startpos [moves e2e4 e7e5 ...]`                                                           | Sets the board to the standard starting position and plays the optional sequence of moves.                                    |
 | `position fen`      | `position fen <fen_string> [moves ...]`                                                             | Initializes the board from a FEN string and applies following legal moves.                                                    |
 | `go`                | `go [depth <N>] [movetime <ms>] [wtime <ms> btime <ms> winc <ms> binc <ms>] [nodes <N>] [infinite]` | Launches search with specified constraints on a dedicated worker thread.                                                      |
 | `stop`              | `stop`                                                                                              | Signals the cooperative search stop token; search aborts gracefully and emits the `bestmove` of the last completed iteration. |
 | `quit`              | `quit`                                                                                              | Immediately halts search and exits the engine process cleanly.                                                                |
-| `setoption`         | `setoption name <name> [value <val>]`                                                               | Defensively handled; unsupported options log an info message to `stderr` without advertising invalid parameters.              |
+| `setoption`         | `setoption name <name> [value <val>]`                                                               | Configures engine runtime parameters (Hash, EvalMode, ModelPath, UsePolicy, NeuralWeight).                                     |
+
+## Supported UCI Options
+
+- **`Hash`** (`type spin`, default: 64, min: 1, max: 1024): Transposition table size in megabytes.
+- **`EvalMode`** (`type combo`, default: `Classical`, vars: `Classical`, `Neural`, `Hybrid`):
+  - `Classical`: Tapered hand-crafted evaluation (material, PSTs, pawn structure, king safety, mobility).
+  - `Neural`: Genuine neural network value prediction loaded from `.rks` format. Strict error if model is invalid.
+  - `Hybrid`: Weighted linear combination of classical and neural evaluation (`NeuralWeight` parameter). Falls back safely to classical if no model is loaded.
+- **`ModelPath`** (`type string`, default: `<empty>`): Absolute or relative filesystem path to a `.rks` binary model.
+- **`UsePolicy`** (`type check`, default: `false`): When enabled, uses neural policy logits to refine move ordering among moves of the same tactical tier.
+- **`NeuralWeight`** (`type spin`, default: 50, min: 0, max: 100): Percentage weight given to neural evaluation in Hybrid mode.
 
 ## GUI Integration (Cute Chess, Arena)
 
