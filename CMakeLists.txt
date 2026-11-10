@@ -180,6 +180,12 @@ rooksac_configure_warnings(rooksac_benchmark_test)
 rooksac_configure_sanitizers(rooksac_benchmark_test)
 rooksac_configure_clang_tidy(rooksac_benchmark_test)
 
+add_executable(rooksac_tactical_test engine/tests/tactical-test.cpp)
+target_link_libraries(rooksac_tactical_test PRIVATE rooksac_core)
+rooksac_configure_warnings(rooksac_tactical_test)
+rooksac_configure_sanitizers(rooksac_tactical_test)
+rooksac_configure_clang_tidy(rooksac_tactical_test)
+
 if(BUILD_TESTING)
     add_test(NAME rooksac.build-smoke COMMAND rooksac_build_smoke_test)
     add_test(NAME rooksac.core-types COMMAND rooksac_core_types_test)
@@ -195,6 +201,7 @@ if(BUILD_TESTING)
     add_test(NAME rooksac.neural_eval COMMAND rooksac_neural_eval_test)
     add_test(NAME rooksac.nnue COMMAND rooksac_nnue_test)
     add_test(NAME rooksac.benchmark COMMAND rooksac_benchmark_test)
+    add_test(NAME rooksac.tactical COMMAND rooksac_tactical_test)
 endif()
 
 add_custom_target(

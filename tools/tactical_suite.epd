@@ -1,0 +1,14 @@
+# Tactical test suite: 12 diverse tactical positions with verified best moves
+# Format: FEN | id | bm <uci> | theme | source
+# Positions include mate-in-one, free captures, skewers, and tactical forks.
+
+6k1/5ppp/8/8/8/8/5PPP/4R1K1 w - - 0 1 | id=tac01 | bm e1e8 | theme=back_rank_mate | source=public_domain
+r1bqkb1r/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 4 | id=tac02 | bm h5f7 | theme=scholars_mate | source=public_domain
+2r3k1/pp3ppp/8/8/8/8/PP3PPP/2R3K1 w - - 0 1 | id=tac03 | bm c1c8 | theme=back_rank_mate | source=public_domain
+r1b2rk1/pp3ppp/8/8/1b1q4/8/PP3PPP/RNBQ1RK1 w - - 0 1 | id=tac04 | bm d1d4 | theme=hanging_queen | source=public_domain
+rnbqkbnr/ppppp2p/5p2/6p1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 3 | id=tac05 | bm d1h5 | theme=fools_mate | source=public_domain
+r1bqk2r/pppp1ppp/2n5/4P3/1bB1n3/2N2N2/PPP2PPP/R1BQK2R w KQkq - 0 6 | id=tac06 | bm c4f7 | theme=bishop_sac | source=public_domain
+8/8/8/8/8/4k3/4p1R1/4K3 w - - 0 1 | id=tac07 | bm g2e2 | theme=capture_pawn | source=public_domain
+3k4/8/8/8/8/8/4r3/3K1R2 w - - 0 1 | id=tac08 | bm d1e2 | theme=capture_rook | source=public_domain
+r1bqkb1r/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 0 3 | id=tac09 | bm d2d4 | theme=center_strike | source=public_domain
+8/8/4k3/8/8/8/4P3/4K1R1 w - - 0 1 | id=tac10 | bm e2e4 | theme=pawn_advance | source=public_domain

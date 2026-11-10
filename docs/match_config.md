@@ -79,6 +79,18 @@ Candidate release versions are accepted or rejected using Wald's SPRT:
 python tools/sprt_match.py --pgn docs/benchmarks/sprint06_internal.pgn --elo0 0 --elo1 5
 ```
 
+### Automated UCI A/B Match Runner (`tools/run_match.py`)
+
+A single command runs paired A/B engine matches across any combination of engine evaluation modes (`classical`, `neural`, `neural_policy`, `hybrid`), saving reproducible match PGNs and structured JSON reports containing SPRT decisions, Elo estimates with 95% confidence intervals, and performance metrics (NPS, latency, nodes):
+
+```powershell
+# Example: Compare Neural Value vs Classical baseline with 10 opening pairs (20 games) at depth 3:
+python tools/run_match.py --mode-a neural --mode-b classical --model research/checkpoints/model_test.rks --pairs 10 --depth 3 --output-dir research/experiments/neural_vs_classical
+
+# Example: Compare Neural Value + Policy Move Ordering vs Classical baseline:
+python tools/run_match.py --mode-a neural_policy --mode-b classical --model research/checkpoints/model_test.rks --pairs 10 --depth 3 --output-dir research/experiments/policy_vs_classical
+```
+
 ### Cute Chess CLI (External Engine Match)
 
 ```bash

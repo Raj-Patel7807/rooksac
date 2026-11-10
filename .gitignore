@@ -35,6 +35,7 @@ venv/
 # Checkpoint outputs
 research/checkpoints/*
 !research/checkpoints/policy_value_test_metadata.json
+research/experiments/*
 
 # Research data generated shards
 research/data/shards/
