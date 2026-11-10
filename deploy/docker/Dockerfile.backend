@@ -9,9 +9,9 @@ FROM python:3.12.9-slim-bookworm AS engine-builder
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential=12.9 \
-    cmake=3.25.1-1 \
-    ninja-build=1.11.1-2 \
+    build-essential \
+    cmake \
+    ninja-build \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
@@ -64,7 +64,6 @@ RUN chmod 755 /opt/rooksac/bin/rooksac /opt/rooksac/bin/rooksac_bench
 
 # Copy model artifact directory
 RUN mkdir -p /opt/rooksac/models && chown -R rooksac:rooksac /opt/rooksac/models
-COPY --chown=rooksac:rooksac research/checkpoints/model_test.rks /opt/rooksac/models/model_test.rks
 COPY --chown=rooksac:rooksac research/checkpoints/policy_value_test_metadata.json /opt/rooksac/models/model_metadata.json
 
 # Copy backend application code and tools

@@ -41,7 +41,6 @@ research/experiments/*
 research/data/shards/
 research/data/*.jsonl
 research/data/*.jsonl.gz
-research/tests/golden_tensors.json
 
 # Editors and operating systems
 .idea/

@@ -50,8 +50,8 @@ class TestDockerConfigSmoke(unittest.TestCase):
         self.assertRegex(content, r"COPY\s+--from=ghcr\.io/astral-sh/uv:[\d\.]+")
         self.assertIn("uv sync --frozen --no-dev", content)
 
-        # 4. Model artifact included
-        self.assertIn("COPY --chown=rooksac:rooksac research/checkpoints/model_test.rks", content)
+        # 4. Model metadata directory created
+        self.assertIn("COPY --chown=rooksac:rooksac research/checkpoints/policy_value_test_metadata.json /opt/rooksac/models/model_metadata.json", content)
 
         # 5. Healthcheck present
         self.assertIn("HEALTHCHECK", content)
