@@ -8,14 +8,29 @@ on:
 
 permissions:
     contents: read
+    security-events: write
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
 
 jobs:
+    security-scan:
+        name: Secret and Security Scanning
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Verify no private secrets or keys committed
+              run: |
+                  echo "Scanning for accidental secret commits..."
+                  ! git grep -i -E "BEGIN (RSA |EC )?PRIVATE KEY" -- ':!tools/tests/test_download_model.py'
+                  ! git grep -i -E "hf_[a-zA-Z0-9]{34,}" -- ':!tools/tests/test_download_model.py'
+
     engine-build-and-test:
-        name: C++ Engine (Ubuntu, GCC)
+        name: C++ Engine Build, Tests & Perft Regression
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -23,17 +38,22 @@ jobs:
             - name: Install build tools
               run: sudo apt-get update && sudo apt-get install --yes cmake ninja-build g++
 
-            - name: Configure
+            - name: Configure CMake
               run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DROOKSAC_WARNINGS_AS_ERRORS=OFF
 
-            - name: Build
+            - name: Build Engine, Bench & Test Targets
               run: cmake --build build --parallel
 
-            - name: Test
+            - name: Run Complete CTest Suite (UCI, Perft, Movegen, Neural, Tactical)
               run: ctest --test-dir build --output-on-failure
 
+            - name: Direct UCI Protocol Smoke Test
+              run: |
+                  printf "uci\nisready\nquit\n" | ./build/rooksac | grep "uciok"
+                  printf "uci\nisready\nquit\n" | ./build/rooksac | grep "readyok"
+
     backend-tests:
-        name: Backend API Tests (Python / uv)
+        name: Backend API & ML Research Pipeline Tests
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -41,23 +61,26 @@ jobs:
             - name: Install uv
               uses: astral-sh/setup-uv@v5
               with:
-                  version: "latest"
+                  version: "0.6.14"
                   enable-cache: true
 
             - name: Set up Python
               run: uv python install 3.12
 
-            - name: Install dependencies
+            - name: Install Python dependencies
               run: uv sync --frozen
 
-            - name: Run Backend tests
+            - name: Run Backend Unit & Integration Tests
               run: uv run python -m unittest discover -s app/backend/tests
 
-            - name: Run ML & Research tests
+            - name: Run ML & Research Pipeline Tests
               run: uv run python -m unittest discover -s research/tests
 
+            - name: Run Tools & Deployment Smoke Tests
+              run: uv run python -m unittest discover -s tools/tests
+
     frontend-build-and-test:
-        name: Frontend (Node)
+        name: Frontend Lint, Typecheck, Vitest & Build
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -68,14 +91,39 @@ jobs:
                   cache: "npm"
                   cache-dependency-path: app/frontend/package-lock.json
 
-            - name: Install
+            - name: Install Dependencies
               working-directory: app/frontend
               run: npm ci
 
-            - name: Test
+            - name: Lint Check
+              working-directory: app/frontend
+              run: npm run lint
+
+            - name: TypeScript Typecheck
+              working-directory: app/frontend
+              run: npx tsc -b
+
+            - name: Vitest Unit & Component Tests
               working-directory: app/frontend
               run: npm test
 
-            - name: Build
+            - name: Production Build
               working-directory: app/frontend
               run: npm run build
+
+    docker-backend-build:
+        name: Docker Backend Build Smoke
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Build Backend Production Image
+              uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  file: deploy/docker/Dockerfile.backend
+                  push: false
+                  tags: rooksac-backend:ci-test

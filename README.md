@@ -73,7 +73,7 @@ cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 # Compile engine and test executables
 cmake --build build --parallel
 
-# Run comprehensive engine test suite (14/14 tests)
+# Run comprehensive engine test suite (15/15 tests)
 ctest --test-dir build --output-on-failure
 ```
 

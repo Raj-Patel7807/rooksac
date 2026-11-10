@@ -78,3 +78,52 @@ Both Python and C++ encoders:
 - **Value Calibration**:
   Converts $v \in [-1, 1]$ into integer centipawns:
   $$\text{cp} = -\frac{400}{K} \log_{10}\left(\frac{1 - v}{1 + v}\right)$$
+
+---
+
+## 4. End-to-End Workflow: Train, Export & Run
+
+A new developer can train a neural model, export it to native `.rks` v2 container format, and execute search in UCI mode with the following steps:
+
+### 1. Extract Dataset from PGN
+```bash
+python tools/pgn_extract.py \
+  --pgn-file games.pgn \
+  --output-dir research/data/dataset \
+  --train-ratio 0.8 --val-ratio 0.1 --test-ratio 0.1
+```
+
+### 2. Train Policy-Value Network
+```bash
+# To train on extracted dataset shards:
+python research/nn/train.py \
+  --dataset research/data/dataset \
+  --output-dir research/checkpoints/run_01 \
+  --epochs 20 --batch-size 128
+
+# Or run explicit quick smoke test on synthetic fixtures:
+python research/nn/train.py \
+  --smoke-test \
+  --output-dir research/checkpoints/smoke_out \
+  --epochs 2
+```
+
+### 3. Export to Binary `.rks` Format
+```bash
+python tools/export_model.py \
+  --checkpoint research/checkpoints/run_01/best.pt \
+  --output research/checkpoints/model_v1.rks
+```
+
+### 4. Run C++ Engine in Neural Mode
+```bash
+# Using UCI:
+./build/rooksac
+uci
+setoption name ModelPath value research/checkpoints/model_v1.rks
+setoption name EvalMode value Neural
+setoption name UsePolicy value true
+isready
+position startpos
+go depth 10
+```

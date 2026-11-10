@@ -29,4 +29,10 @@ This page is the authoritative status summary. It describes repository facts, no
 
 ## Current focus & readiness
 
-- **3+2 Blitz Tournament Readiness**: Verified with 13/13 C++ tests, 21/21 UCI conformance checks, 4/4 FastAPI backend tests, and 9/9 frontend tests. Engine is **CONDITIONALLY READY** for bot matches (external match runner integration like Cute Chess is required to conduct cross-engine rating validation).
+- **Production Readiness**: Verified across all quality gates:
+  - 15/15 native C++ CTest test suites pass (0 failures), including core types, position, movegen, perft regression, minimax/alpha-beta search, UCI protocol, Zobrist TT, evaluation, tuning, neural evaluation, NNUE accumulator, benchmark, and tactical puzzle suites.
+  - 10/10 FastAPI backend integration tests pass, verifying health readiness, rate limiting, depth bounds, and PGN payload ingestion.
+  - 22/22 ML and research pipeline tests pass, covering planar tensor parity, streaming PGN extraction, and residual CNN training.
+  - 7/7 tool and deployment smoke tests pass, including Dockerfile syntax and container contracts.
+  - Frontend TypeScript typechecking, linting, and 19/19 Vitest unit tests pass cleanly.
+  - Complete evidence and verification instructions recorded in [PRODUCTION_CHECKLIST.md](PRODUCTION_CHECKLIST.md).

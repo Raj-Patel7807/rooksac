@@ -1,3 +1,5 @@
+import json
+import logging
 import time
 import uuid
 from collections import defaultdict
@@ -9,6 +11,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.backend.config import settings
 from app.backend.routes import pool, router as api_router
+
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
+)
+logger = logging.getLogger("rooksac.backend")
 
 # In-memory sliding window rate limiter
 _request_counts = defaultdict(list)
@@ -34,9 +43,20 @@ def get_trusted_client_ip(request: Request) -> str:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Controlled startup
+    logger.info(
+        json.dumps({
+            "event": "startup",
+            "environment": settings.ENVIRONMENT,
+            "version": settings.VERSION,
+            "eval_mode": settings.ENGINE_EVAL_MODE,
+            "max_workers": settings.MAX_CONCURRENT_WORKERS,
+        })
+    )
     yield
     # Clean shutdown of all persistent engine processes
+    logger.info(json.dumps({"event": "shutdown_start"}))
     await pool.shutdown()
+    logger.info(json.dumps({"event": "shutdown_complete"}))
 
 
 def create_app() -> FastAPI:
@@ -70,7 +90,23 @@ def create_app() -> FastAPI:
 
         _request_counts[client_ip].append(now)
 
+        start_time = time.time()
         response: Response = await call_next(request)
+        duration_ms = round((time.time() - start_time) * 1000, 2)
+
+        # Structured request logging without sensitive data or verbose payloads
+        logger.info(
+            json.dumps({
+                "event": "http_request",
+                "request_id": request_id,
+                "client_ip": client_ip,
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "duration_ms": duration_ms,
+            })
+        )
+
         response.headers["X-Request-ID"] = request_id
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"

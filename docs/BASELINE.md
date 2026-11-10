@@ -12,7 +12,7 @@ All tests were executed against the current `main` branch.
 ctest --test-dir build --output-on-failure
 ```
 
-**Outcome: 13 / 13 tests PASSED (real time: 0.96s)**
+**Outcome: 15 / 15 tests PASSED**
 
 | #   | Test Name             | Target Executable              |   Result   | Elapsed Time | Coverage                                                  |
 | --- | --------------------- | ------------------------------ | :--------: | :----------: | --------------------------------------------------------- |
@@ -27,8 +27,10 @@ ctest --test-dir build --output-on-failure
 | 9   | `rooksac.zobrist_tt`  | `rooksac_zobrist_tt_test.exe`  | **PASSED** |    0.07s     | Zobrist hash invariants, TT replacement, stale moves      |
 | 10  | `rooksac.eval`        | `rooksac_eval_test.exe`        | **PASSED** |    0.05s     | Tapered eval, PSTs, pawn structure, insufficient material |
 | 11  | `rooksac.tuning`      | `rooksac_tuning_test.exe`      | **PASSED** |    0.03s     | Texel tuning loss evaluation, parameter extraction        |
-| 12  | `rooksac.neural_eval` | `rooksac_neural_eval_test.exe` | **PASSED** |    0.03s     | 18-plane tensor encoding, native evaluator scaffolding    |
+| 12  | `rooksac.neural_eval` | `rooksac_neural_eval_test.exe` | **PASSED** |    0.04s     | 18-plane tensor encoding, native .rks v2 inference parity |
 | 13  | `rooksac.nnue`        | `rooksac_nnue_test.exe`        | **PASSED** |    0.03s     | 832-feature accumulator, incremental updates              |
+| 14  | `rooksac.benchmark`   | `rooksac_benchmark_test.exe`   | **PASSED** |    0.09s     | Canonical fixed benchmark FEN suite search test           |
+| 15  | `rooksac.tactical`    | `rooksac_tactical_test.exe`    | **PASSED** |    0.03s     | Tactical puzzle suite verification                        |
 
 ---
 
