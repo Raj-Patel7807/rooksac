@@ -232,8 +232,8 @@ bool NeuralEvaluator::loadModel(std::string_view modelPath, bool allowFallback) 
     // 3. Read Policy Head
     policyConvW_.resize(16 * channels * 1 * 1);
     policyConvB_.resize(16);
-    policyFcW_.resize(kActionVocabSize * 16 * 64);
-    policyFcB_.resize(kActionVocabSize);
+    policyFcW_.resize(numActions * 16 * 64);
+    policyFcB_.resize(numActions);
 
     file.read(reinterpret_cast<char*>(policyConvW_.data()), static_cast<std::streamsize>(policyConvW_.size() * sizeof(float)));
     file.read(reinterpret_cast<char*>(policyConvB_.data()), static_cast<std::streamsize>(policyConvB_.size() * sizeof(float)));
@@ -299,7 +299,7 @@ std::pair<float, std::vector<float>> NeuralEvaluator::forwardPass(const FeatureT
         }
     }
 
-    // Policy head: conv 1x1 (16 channels) -> dense 4096
+    // Policy head: conv 1x1 (16 channels) -> dense numActions
     std::vector<float> pConvOut(16 * 64);
     conv2d(buf1.data(), C, 8, 8, policyConvW_.data(), policyConvB_.data(), 16, 1, pConvOut.data(), /*applyRelu=*/true);
 

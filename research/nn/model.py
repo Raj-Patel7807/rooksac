@@ -9,6 +9,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from research.nn.features import VOCAB_SIZE
+
 class ResBlock(nn.Module):
     def __init__(self, channels: int):
         super().__init__()
@@ -25,7 +27,7 @@ class ResBlock(nn.Module):
         return F.relu(out)
 
 class PolicyValueNet(nn.Module):
-    def __init__(self, in_channels: int = 18, num_blocks: int = 4, channels: int = 64, num_actions: int = 4096):
+    def __init__(self, in_channels: int = 18, num_blocks: int = 4, channels: int = 64, num_actions: int = VOCAB_SIZE):
         super().__init__()
         # Initial convolutional layer
         self.conv_in = nn.Conv2d(in_channels, channels, kernel_size=3, padding=1, bias=False)
@@ -34,7 +36,7 @@ class PolicyValueNet(nn.Module):
         # Residual backbone
         self.res_blocks = nn.ModuleList([ResBlock(channels) for _ in range(num_blocks)])
 
-        # Policy head: conv 1x1 -> bn -> relu -> linear 4096
+        # Policy head: conv 1x1 -> bn -> relu -> linear num_actions
         self.policy_conv = nn.Conv2d(channels, 16, kernel_size=1, bias=False)
         self.policy_bn = nn.BatchNorm2d(16)
         self.policy_fc = nn.Linear(16 * 8 * 8, num_actions)

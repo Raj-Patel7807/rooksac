@@ -12,6 +12,7 @@ import struct
 import sys
 import torch
 import torch.nn as nn
+from research.nn.features import VOCAB_SIZE
 from research.nn.model import PolicyValueNet
 
 MAGIC = b"ROOKSAC1"

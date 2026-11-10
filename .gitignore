@@ -27,6 +27,20 @@ __pycache__/
 venv/
 *.pt
 *.onnx
+*.rks
+*.pgn
+*.jsonl
+*.jsonl.gz
+
+# Checkpoint outputs
+research/checkpoints/*
+!research/checkpoints/policy_value_test_metadata.json
+
+# Research data generated shards
+research/data/shards/
+research/data/*.jsonl
+research/data/*.jsonl.gz
+research/tests/golden_tensors.json
 
 # Editors and operating systems
 .idea/
