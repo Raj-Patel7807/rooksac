@@ -1,60 +1,73 @@
-
 # Multi-stage production build for RookSac C++ Engine and Backend API
 
-# Stage 1: Build native C++ engine
-# Use the same base image as runtime to avoid libstdc++ ABI mismatch.
-FROM python:3.12-slim-bookworm AS engine-builder
+# ==============================================================================
+# Stage 1: Build native C++ engine with GCC / CMake
+# Pinned to Debian 12 Bookworm to guarantee libstdc++ ABI compatibility with runtime
+# ==============================================================================
+FROM python:3.12.9-slim-bookworm AS engine-builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    cmake \
-    ninja-build \
+    build-essential=12.9 \
+    cmake=3.25.1-1 \
+    ninja-build=1.11.1-2 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+# Copy CMake build definitions and C++ engine source
 COPY CMakeLists.txt ./
 COPY engine/ ./engine/
 COPY docs/ ./docs/
 
-RUN cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+RUN cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build build --target rooksac rooksac_bench
 
-RUN cmake --build build --target rooksac rooksac_bench
-
-
+# ==============================================================================
 # Stage 2: Backend runtime
-FROM python:3.12-slim-bookworm AS runtime
+# ==============================================================================
+FROM python:3.12.9-slim-bookworm AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     ENVIRONMENT=production \
     ENGINE_BINARY_PATH=/opt/rooksac/bin/rooksac \
+    ENGINE_MODEL_PATH=/opt/rooksac/models/model_test.rks \
+    ENGINE_EVAL_MODE=Classical \
+    PORT=8000 \
     PATH="/opt/rooksac/.venv/bin:$PATH"
 
 WORKDIR /opt/rooksac
 
-# Create non-root user
-RUN groupadd -r rooksac && useradd -r -g rooksac -s /bin/false rooksac
+# Security: Create dedicated non-privileged user and group
+RUN groupadd -r rooksac --gid 10001 && \
+    useradd -r -g rooksac --uid 10001 --no-create-home -s /bin/false rooksac
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+# Install pinned uv binary for deterministic Python package resolution
+COPY --from=ghcr.io/astral-sh/uv:0.6.14 /uv /bin/uv
 
-# Install Python dependencies
+# Install Python production dependencies only (no dev, no PyTorch in minimal runtime)
 COPY pyproject.toml uv.lock ./
 
 RUN uv venv /opt/rooksac/.venv && \
     uv sync --frozen --no-dev
 
-# Copy compiled engine
+# Copy compiled native C++ engine binary from builder
 COPY --from=engine-builder --chown=rooksac:rooksac \
     /app/build/rooksac /opt/rooksac/bin/rooksac
+COPY --from=engine-builder --chown=rooksac:rooksac \
+    /app/build/rooksac_bench /opt/rooksac/bin/rooksac_bench
 
-RUN chmod 755 /opt/rooksac/bin/rooksac
+RUN chmod 755 /opt/rooksac/bin/rooksac /opt/rooksac/bin/rooksac_bench
 
-# Copy backend application and tools
+# Copy model artifact directory
+RUN mkdir -p /opt/rooksac/models && chown -R rooksac:rooksac /opt/rooksac/models
+COPY --chown=rooksac:rooksac research/checkpoints/model_test.rks /opt/rooksac/models/model_test.rks
+COPY --chown=rooksac:rooksac research/checkpoints/policy_value_test_metadata.json /opt/rooksac/models/model_metadata.json
+
+# Copy backend application code and tools
 COPY --chown=rooksac:rooksac app/backend/ ./app/backend/
 COPY --chown=rooksac:rooksac tools/ ./tools/
 
@@ -65,7 +78,15 @@ USER rooksac
 
 EXPOSE 8000
 
+# Docker healthcheck querying the readiness endpoint
+# Succeeds ONLY when the backend process and UCI engine worker are alive and ready
 HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')" || exit 1
+    CMD python -c "import urllib.request, os, sys; \
+port = os.getenv('PORT', '8000'); \
+url = f'http://127.0.0.1:{port}/api/v1/health'; \
+res = urllib.request.urlopen(url); \
+sys.exit(0 if res.getcode() == 200 else 1)" || exit 1
 
-CMD ["uvicorn", "app.backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+# Start Uvicorn binding to 0.0.0.0 and dynamic $PORT (Render sets $PORT dynamically)
+# Single worker ensures engine pool concurrency is governed within a single process.
+CMD ["sh", "-c", "exec uvicorn app.backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]

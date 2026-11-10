@@ -1,0 +1,53 @@
+# Git and editor files
+.git
+.gitignore
+.gitattributes
+.github
+.idea
+.vscode
+*.swp
+*.swo
+
+# Local build and intermediate artifacts
+build/
+build-*/
+out/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+Testing/
+
+# Python cache, environments, and local data
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# Training artifacts, large raw datasets, and temporary experiments
+research/data/*.jsonl
+research/data/*.jsonl.gz
+research/data/shards/
+research/experiments/
+research/checkpoints/*.pt
+research/checkpoints/smoke_test/
+research/checkpoints/smoke_test_run/
+
+# Test output and golden reference data not needed at runtime
+research/tests/golden_tensors.json
+tools/benchmark_results/
+
+# Frontend development dependencies and build cache
+app/frontend/node_modules/
+app/frontend/dist/
+app/frontend/.vite/
+app/frontend/coverage/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
